@@ -24,7 +24,7 @@ CREATE TABLE `insurance`.`CLAIM` (
 	`CAUS_CODE`       MEDIUMINT  NULL     COMMENT '사고의 원인에 해당하는 사인코드 
 	', -- 사고원인코드
 	`CAUS_CODE_DTAL`  TINYINT    NULL     COMMENT '사고의 원인에 해당하는 사인코드_상세정보
-	', -- 사고원인세부
+	''#'' 값은 대부분 병원 진단서 등에서 해당 내용의 기재가 누락된 경우에 해당하며, 담당자의 기재 오류 또는 실제 상세원인이 불분명할 경우까지 모두 포함합니다. ', -- 사고원인세부
 	`DSAS_NAME`       MEDIUMTEXT NULL     COMMENT '병명
 	', -- 병명
 	`DMND_RESN_CODE`  TINYINT    NULL     COMMENT '"지급청구의 원인이 되는 사유코드  
@@ -68,7 +68,8 @@ CREATE TABLE `insurance`.`CLAIM` (
 	', -- 병원할인액
 	`COUNT_TRMT_ITEM` TINYINT    NULL     COMMENT '실손영수증 내 진료과목의 개수
 	', -- 청구시 진료과목수
-	`DCAF_CMPS_XCPA`  INT        NULL     COMMENT '변수정의서에 없으나 대충 뭔가의 금액인것 같음.', -- 알수없는금액
+	`DCAF_CMPS_XCPA`  INT        NULL     COMMENT '실손 상품의 경우 상품의 특성상 약관상으로 일정한 보상제외 항목을 포함하고 있는데요. 이러한 보상제외 항목에 해당하는 금액을 의미합니다.
+	그리하여 실제 보험사는 피보험자에게 발생한 총 비용에서 보상제외 항목에 해당하는 금액을 제외한 금액만을 보상하게 됩니다', --  실손상품에서 보상제외금액
 	`NON_PAY_RATIO`   FLOAT      NULL     COMMENT '(비급여 + 전액본인부담금) / (환자부담총액) = (비급여 + 전액본인부담금) / (본인부담금 + 비급여 + 전액본인부담금)
 	', -- 실손비급여비율
 	`HEED_HOSP_YN`    TINYINT    NULL     COMMENT '금감원 유의 병원 대상 여부 
