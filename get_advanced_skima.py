@@ -41,7 +41,11 @@ def getAdvSkima(database_name='insurance'):
             stddev = cur.fetchall()[0][0]
             cur.execute('SHOW FIELDS FROM '+table+' where Field ="'+column+'"')
             column_type = cur.fetchall()[0][1]
-            db_skima[table][i]=[column,avg,stddev,column_type]
+            cur.execute('SELECT MAX('+column+') from '+table+' limit 1')
+            max=stddev = cur.fetchall()[0][0]
+            cur.execute('SELECT MIN('+column+') from '+table+' limit 1')
+            min=stddev = cur.fetchall()[0][0]
+            db_skima[table][i]=[column,avg,stddev,column_type,min,max] #순서는 외워 써야한다.
             i=i+1
         #print(db_skima[table])
     return db_skima
@@ -60,7 +64,7 @@ def pickler(pickle_filename='adv_skima.pickle'):
     f = open(pickle_filename,'wb')
     pickle.dump(getAdvSkima(),f,pickle.HIGHEST_PROTOCOL)
     f.close()
-    print('pickle_size : ',os.stat(pickle_filename).st_size)
+    print'pickle finished.  Size : ',os.stat(pickle_filename).st_size
 
 
 try:
