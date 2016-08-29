@@ -48,21 +48,17 @@ def allFloat(array):
             #print '\nafter',array,type(array[i][j]) #float 바꾼 후
             j=j+1
         i=i+1
-        print '\n printing data_type \n',data_type #첫줄에서 만든 데이터 타입
+        #print '\n printing data_type \n',data_type #첫줄에서 만든 데이터 타입
     return array
 
     #첫줄 타입 판단 , 저장
     #둘째줄부터 float 로 바꾸기
 
 try:
-    cucntt_y=getdata("cucntt",1)
-    cucntt_n=getdata("cucntt",0)
-    cucntt_y=getdata("cuclaim",1)
-    cuclaim_n=getdata("cuclaim",0)
-
-    allFloat(cucntt_y)
-    print '변경 후 타입'
-    allFloat(allFloat(cucntt_y))
+    cucntt_y=allFloat(getdata("cucntt",1))
+    cucntt_n=allFloat(getdata("cucntt",0))
+    cuclaim_y=allFloat(getdata("cuclaim",1))
+    cuclaim_n=allFloat(getdata("cuclaim",0))
 
 finally:
     print("closing")
