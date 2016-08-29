@@ -4,6 +4,7 @@
 import MySQLdb
 import datetime
 import pickle
+import numpy
 
 #서버접속 설정과 한글사용위한 인코딩 설정
 mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix')
@@ -24,7 +25,7 @@ def getdata(target,yn):
         sql=sql_cucntt+yn
     elif target=="cuclaim":
         sql=sql_cuclaim+yn
-    sql=sql+' limit 2' #테스트용 10개만 뽑아볼때쓰는 코드
+    #sql=sql+' limit 2' #테스트용 10개만 뽑아볼때쓰는 코드
     #print sql #쿼리 만들어진거 확인
     cur.execute(sql)
     return [list(a) for a in cur.fetchall()] #왜 tuple 로 받아오지? list로 못받아오나? list() 쓰면되는군
@@ -51,14 +52,16 @@ def allFloat(array):
         #print '\n printing data_type \n',data_type #첫줄에서 만든 데이터 타입
     return array
 
-    #첫줄 타입 판단 , 저장
-    #둘째줄부터 float 로 바꾸기
+def normalize(array): #-0.5~+0.5
+    return (array - array.min(0))/array.ptp(0)-0.5
 
 try:
-    cucntt_y=allFloat(getdata("cucntt",1))
-    cucntt_n=allFloat(getdata("cucntt",0))
-    cuclaim_y=allFloat(getdata("cuclaim",1))
-    cuclaim_n=allFloat(getdata("cuclaim",0))
+    #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
+    cucntt_y=normalize(numpy.array(allFloat(getdata("cucntt",1))))
+    cucntt_n=normalize(numpy.array(allFloat(getdata("cucntt",0))))
+    cuclaim_y=normalize(numpy.array(allFloat(getdata("cuclaim",1))))
+    cuclaim_n=normalize(numpy.array(allFloat(getdata("cuclaim",0))))
+    print(cucntt_y)
 
 finally:
     print("closing")
