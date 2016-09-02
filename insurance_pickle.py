@@ -103,7 +103,10 @@ def showCategoricalLimit(array,total_variable_limit=0.01): #기본값으로 데�
         limit=total_variable_limit*array.shape[0]
         print '\nvariable limit ratio : ',total_variable_limit*100,'%   ',total_variable_limit*array.shape[0]
 
-    n_total_variables=0
+    n_total_variables=array.shape[1]
+    if limit < n_total_variables:
+        raise NameError('받은 배열의 컬럼이 limit 개수보다 많아서 더미화를 진행할 수 없습니다')
+
     for i in range(0,unq_sorted.shape[0]):
         n_total_variables += unq_sorted[i]-1 #해당 변수를 dummylize 해서 추가된 변수개수를 포함하면 총 변수개수는 몇개가 되는가.
         if n_total_variables > limit: #총 데이터 라인수*지정비율 보다 변수 수가 많아질때
@@ -150,12 +153,12 @@ try:
     #print'cuclaim_n volume : ',cuclaim_n.shape
 
 
-    #dummy화
-    categorial_threshold=100 # 고유항목수 N개(N>1) 기준으로 dummy 화 할지, 아니면 전체 데이터에서 N의 비율로(0~1값) dummy 화 할지 결정. 숫자범위에따라 자동적용
+    #dummy화                                #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
+    afterdummy_variables_limit=150   #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
     cucntt=numpy.concatenate((cucntt_y,cucntt_n),0)
     cuclaim=numpy.concatenate((cuclaim_y,cuclaim_n),0)
-    cucntt=dummylize(cucntt,autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,categorial_threshold)))
-    cuclaim=dummylize(cuclaim,autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,categorial_threshold)))
+    cucntt=dummylize(cucntt,autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,afterdummy_variables_limit)))
+    cuclaim=dummylize(cuclaim,autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit)))
     cucntt_y=cucntt[:cucntt_y.shape[0]]
     cucntt_n=cucntt[cucntt_y.shape[0]:]
     cuclaim_y=cuclaim[:cuclaim_y.shape[0]]
