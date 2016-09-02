@@ -1,0 +1,6 @@
+library(RMySQL)
+con<-dbConnect(MySQL(),user="root",password="tjdgus123",dbname="insurance",hostname="localhost")
+dbListTables(con)
+fetch<-dbGetQuery(con,"SELECT * FROM claim limit 10")
+iconv(fetch,"CP949","UTF-8")
+dbDisconnect(con)

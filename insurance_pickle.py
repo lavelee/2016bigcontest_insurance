@@ -6,6 +6,7 @@ import datetime
 import pickle
 import numpy
 import os
+import pandas
 
 #서버접속 설정과 한글사용위한 인코딩 설정
 mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix')
@@ -45,10 +46,11 @@ def allFloat(array):
             if i==0: #첫행으로 data type 구분하고 이거사용해서 if분기해 float로 전체변경. 
                 data_type.append(type(data))
             if str(data_type[j])=="<type 'datetime.date'>":
-                data=timestampToDays(data) #datetime 타입일 경우 float 로 바로 변환안되니 다른함수로 숫자로 바꿔오자
+                data=timestampToDays(data) #datetime 타입일 경우 float 로 바로 변환안되니 다른함수로 숫자로 바꿔오자. txt 타입은 쿼리에서부터 이미 제거해서 가지고 들어왔음. 
                 #print 'date conversion applied' #data와 array[i][j] 로 이중접근 중이므로 최대한 data로 처리
             #print '\n\nbefore',array,type(array[i][j]) #float 바꾸기 전
-            array[i][j]=float(data)
+            array[i][j]=numpy.float32(data)
+            #array[i][j]=float(data) #원래 데이터는 이거였는데, 파이썬의 folat는 float64가 기본이라서 나중에 텐서플로에서 오류남. 텐서플로는 float32만을 사용하기 때문. 
             #print '\nafter',array,type(array[i][j]) #float 바꾼 후
             j=j+1
         i=i+1
@@ -64,7 +66,7 @@ def randomize(labels,dataset):
     shuffled_labels = labels[permutation]
     return shuffled_labels, shuffled_dataset
 
-def dataDivide(labels,dataset,test_ratio=0.2):
+def dataDivide(labels,dataset,test_ratio=0.2): #일정비율로 테스트와 트레인셋을 나눔
     divide_position=int(labels.shape[0]*test_ratio)
     #print 'divide_position : ',divide_position
     test_labels = labels[:divide_position]
@@ -78,16 +80,88 @@ def pickletest(pickle_name):
         data=pickle.load(g)
         print data['test_cuclaim_label'][10], data['test_cuclaim_data'][10]
 
+def autoCategoricalIndex(array,n_category_limit=100): #numpy array 받음
+    #유니크 자료수가 100개 미만이면 categorical 로 분류해 [true, false, false,.... ] 로 만들어 내보낸다.
+    return numpy.array(unqCount(array)<n_category_limit)
+
+def unqCount(array):
+    unq_count=[]
+    for i in range(0,array.shape[1]):
+        unq_count.append(len(numpy.unique(array[:,i])))
+    #print(unq_count)
+    return unq_count
+
+def showCategoricalLimit(array,total_variable_limit=0.01): #기본값으로 데이터 개수의 1% 까지 변수확장 허용
+    #데이터 라인수에 따라 학습가능한 변수 수가 달라진다. 데이터가 많으면 변수 수를 늘려도 된다. 카테고리 자동분류에 도움. 
+    unq_array=numpy.array(unqCount(array))
+    unq_sorted=numpy.sort(unq_array)
+
+    if total_variable_limit >1: #리밋에 0~1 값은 비율로 판단해 계산하고 1 넘는값은 몇개로 지정했다고 생각함. 
+        limit=total_variable_limit
+        print '\nvariable limit : ',total_variable_limit
+    else:
+        limit=total_variable_limit*array.shape[0]
+        print '\nvariable limit ratio : ',total_variable_limit*100,'%   ',total_variable_limit*array.shape[0]
+
+    n_total_variables=0
+    for i in range(0,unq_sorted.shape[0]):
+        n_total_variables += unq_sorted[i]-1 #해당 변수를 dummylize 해서 추가된 변수개수를 포함하면 총 변수개수는 몇개가 되는가.
+        if n_total_variables > limit: #총 데이터 라인수*지정비율 보다 변수 수가 많아질때
+            #print '\n now total variables calculated : ', n_total_variables 
+            print 'unique items vector : ',unq_array
+            #print 'unique items sorted vector : ',unq_sorted
+            print 'you can dummylize ',i,'columns counted from smallest'
+            print 'dummylize 할 수 있는 컬럼중 가장 항목수가 많은 컬럼의 항목수 : ',unq_sorted[i-1]
+            #print 'Variable# sum expected after dummylize : ', n_total_variables-unq_sorted[i]
+            return unq_sorted[i-1]+1 #가능한 가장 큰 값에 +1 함. 
+
+
+def dummylize(array,cat_index):
+    print 'this array has ',array.shape[1],' columns. ' 
+    #print 'got index ',cat_index.shape[0]
+    i=0 # numpy 배열은 enumerate 사용불가라서 어쩔수없이.. 
+    for cat_yn in cat_index:
+        if cat_yn :
+            #print(pandas.get_dummies(array[:,i]))
+            array=numpy.concatenate((array,numpy.array(pandas.get_dummies(array[:,i]),dtype='float32')-0.5),1) 
+            #-0.5는 전체데이터를 -0.5~+0.5 했는데 dummy는 0,1 나와서 빼준거. 나중에 normalize 하면 500메가 넘게 나옴. normalize 안하거나 빼서만들면 75메가.
+        i+=1
+    i=0
+    for cat_yn in reversed(cat_index):
+        position = len(cat_index)-i-1
+        if cat_yn :
+            #print position
+            array=numpy.delete(array,position,1)
+        i+=1
+    print 'after dummylyze, ',array.shape[1],' columns.'
+    return array
+
+    
+
 try:
     #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
-    cucntt_y=normalize(numpy.array(allFloat(getdata("cucntt",1))))
+    cucntt_y=normalize(numpy.array(allFloat(getdata("cucntt",1)),dtype="float32"))
     #print'cucntt_y volume : ',cucntt_y.shape
-    cucntt_n=normalize(numpy.array(allFloat(getdata("cucntt",0))))
+    cucntt_n=normalize(numpy.array(allFloat(getdata("cucntt",0)),dtype="float32"))
     #print'cucntt_n volume : ',cucntt_n.shape
-    cuclaim_y=normalize(numpy.array(allFloat(getdata("cuclaim",1))))
+    cuclaim_y=normalize(numpy.array(allFloat(getdata("cuclaim",1)),dtype="float32"))
     #print'cuclaim_y volume : ',cuclaim_y.shape
-    cuclaim_n=normalize(numpy.array(allFloat(getdata("cuclaim",0))))
+    cuclaim_n=normalize(numpy.array(allFloat(getdata("cuclaim",0)),dtype="float32"))
     #print'cuclaim_n volume : ',cuclaim_n.shape
+
+
+    #dummy화
+    categorial_threshold=100 # 고유항목수 N개(N>1) 기준으로 dummy 화 할지, 아니면 전체 데이터에서 N의 비율로(0~1값) dummy 화 할지 결정. 숫자범위에따라 자동적용
+    cucntt=numpy.concatenate((cucntt_y,cucntt_n),0)
+    cuclaim=numpy.concatenate((cuclaim_y,cuclaim_n),0)
+    cucntt=dummylize(cucntt,autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,categorial_threshold)))
+    cuclaim=dummylize(cuclaim,autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,categorial_threshold)))
+    cucntt_y=cucntt[:cucntt_y.shape[0]]
+    cucntt_n=cucntt[cucntt_y.shape[0]:]
+    cuclaim_y=cuclaim[:cuclaim_y.shape[0]]
+    cuclaim_n=cuclaim[cuclaim_n.shape[0]:]
+    del cucntt, cuclaim
+
 
     #라벨링한뒤에 class들 합치기
     cucntt_label=numpy.concatenate((numpy.zeros(cucntt_y.shape[0])+1,numpy.zeros(cucntt_n.shape[0])),axis=0)
@@ -124,7 +198,7 @@ try:
         }
     pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
     f.close()
-    print 'picklize finished.   Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte'
+    print '\npicklize finished.   Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte'
 
     #pickletest(pickle_name)
 
