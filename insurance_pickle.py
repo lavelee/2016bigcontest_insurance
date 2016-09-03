@@ -65,7 +65,10 @@ def allFloat(array):
     return array
 
 def normalize(array): #-0.5~+0.5
-    return (array - array.min(0))/array.ptp(0)-0.5
+    array=numpy.array(array,dtype='float32')
+    for col_num in range(0,array.shape[1]):
+        array[:,col_num]=(array[:,col_num]-array[:,col_num].min(0))/array[:,col_num].ptp(0)-0.5
+    return array
 
 def randomize(labels,dataset):
     permutation = numpy.random.permutation(labels.shape[0])
@@ -85,7 +88,8 @@ def dataDivide(labels,dataset,test_ratio=0.2): #일정비율로 테스트와 트
 def pickletest(pickle_name):
     with open(pickle_name,'rb') as g:
         data=pickle.load(g)
-        print data['test_cuclaim_label'][10], data['test_cuclaim_data'][10]
+        print data['test_cuclaim_label'][10]
+        print data['test_cuclaim_data'][10]
 
 def autoCategoricalIndex(array,n_category_limit=100): #numpy array 받음
     #유니크 자료수가 100개 미만이면 categorical 로 분류해 [true, false, false,.... ] 로 만들어 내보낸다.
@@ -126,7 +130,9 @@ def showCategoricalLimit(array,total_variable_limit=0.01): #기본값으로 데�
             return unq_sorted[i-1]+1 #가능한 가장 큰 값에 +1 함. 
 
 
-def dummylize(array,cat_index,sql):
+def dummylize(array,cat_index,sql,dummylize=1):
+    if dummylize==0:
+        cat_index=numpy.zeros(cat_index.shape[0])
     column_names=columnNames(sql) #더미화된 결과 컬럼이름 받기위해 sql 을 받아오기로 함. 
     print '\nbefore dummylize, ',array.shape[1],' columns. ' 
     print 'got index 5 columns',cat_index.shape[0]
@@ -171,14 +177,14 @@ try:
     cucntt =numpy.concatenate((cucntt_y,cucntt_n),0)#더미화 위해 잠시 테이블 합침
     cuclaim=numpy.concatenate((cuclaim_y,cuclaim_n),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
     #아래는 자동으로 카테고리 컬럼이 뭔지 생성. 
-    afterdummy_variables_limit=0.01  #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
+    afterdummy_variables_limit=100  #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
                                                 #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
     cucntt_cat_tf_index=autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,afterdummy_variables_limit)) #자동변수 . 아니면 수동으로
     cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit))
-    cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt) #더미화 실행
-    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim)
-    cucntt=normalize(cucntt) #normalize
-    claim=normalize(cuclaim)
+    cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt,1) #더미화 실행, 안하려면 이 줄 삭제가 아니라 옵션에 ,0 넣기
+    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim,1)
+    cucntt=normalize(cucntt) #합친김에 normalize
+    cuclaim=normalize(cuclaim)
     cucntt_y=cucntt[:cucntt_y.shape[0]] #합쳤던 테이블 분리
     cucntt_n=cucntt[cucntt_y.shape[0]:]
     cuclaim_y=cuclaim[:cuclaim_y.shape[0]]
