@@ -20,8 +20,15 @@ cur.execute('SET character_set_connection=utf8;')
 sql_cucntt="SELECT CUST_ROLE, IRKD_CODE_DTAL, IRKD_CODE_ITEM, GOOD_CLSF_CDNM, CNTT_YM, CLLT_FP_PRNO, REAL_PAYM_TERM, SALE_CHNL_CODE, CNTT_STAT_CODE, EXPR_YM, EXTN_YM, LAPS_YM, PAYM_CYCL_CODE, MAIN_INSR_AMT, SUM_ORIG_PREM, RECP_PUBL, CNTT_RECP, MNTH_INCM_AMT, DISTANCE, SEX, AGE, RESI_COST, RESI_TYPE_CODE, FP_CAREER, CUST_RGST, CTPR, OCCP_GRP1, OCCP_GRP2, TOTALPREM, MINCRDT, MAXCRDT, WEDD_YN, MATE_OCCP_GRP1, MATE_OCCP_GRP2, CHLD_CNT, LTBN_CHLD_AGE, MAX_PAYM_YM, MAX_PRM, CUST_INCM, RCBASE_HSHD_INCM, JPBASE_HSHD_INCM FROM cntt LEFT JOIN cust ON cntt.CUST_ID=cust.CUST_ID WHERE cust.SIU_CUST_YN="
 sql_cuclaim="SELECT ACCI_OCCP_GRP1, ACCI_OCCP_GRP2, CHANG_FP_YN, RECP_DATE, ORIG_RESN_DATE, RESN_DATE, CRNT_PROG_DVSN, ACCI_DVSN, CAUS_CODE, CAUS_CODE_DTAL, DMND_RESN_CODE, DMND_RSCD_SQNO, HOSP_OTPA_STDT, HOSP_OTPA_ENDT, RESL_CD1, VLID_HOSP_OTDA, HOUSE_HOSP_DIST, HOSP_CODE, ACCI_HOSP_ADDR, HOSP_SPEC_DVSN, CHME_LICE_NO, PAYM_DATE, DMND_AMT, PAYM_AMT, PMMI_DLNG_YN, SELF_CHAM, NON_PAY, TAMT_SFCA, PATT_CHRG_TOTA, DSCT_AMT, COUNT_TRMT_ITEM, DCAF_CMPS_XCPA, NON_PAY_RATIO, HEED_HOSP_YN, SEX, AGE, RESI_COST, RESI_TYPE_CODE, FP_CAREER, CUST_RGST, CTPR, OCCP_GRP1, OCCP_GRP2, TOTALPREM, MINCRDT, MAXCRDT, WEDD_YN, MATE_OCCP_GRP1, MATE_OCCP_GRP2, CHLD_CNT, LTBN_CHLD_AGE, MAX_PAYM_YM, MAX_PRM, CUST_INCM, RCBASE_HSHD_INCM, JPBASE_HSHD_INCM from claim left join cust on claim.CUST_ID=cust.CUST_ID where cust.SIU_CUST_YN="
 
-
-
+def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우 단어 받아서 컬럼네임 배열로 출력. 
+    sql=sql.upper()
+    initial=initial.upper()
+    end=end.upper()
+    column_names=sql[sql.find(initial)+len(initial)+1 : sql.find(end)] #select 이후 띄어쓰기 하나 때문에 +1
+    column_names=column_names.replace(" ","").split(",")
+    #print (column_names)
+    #print len(column_names)
+    return column_names
 
 def getdata(target,yn):
     yn=str(yn) #숫자로 넘어온거 문자로 바꿔서 더할수있게
@@ -119,51 +126,64 @@ def showCategoricalLimit(array,total_variable_limit=0.01): #기본값으로 데�
             return unq_sorted[i-1]+1 #가능한 가장 큰 값에 +1 함. 
 
 
-def dummylize(array,cat_index):
-    print 'this array has ',array.shape[1],' columns. ' 
-    #print 'got index ',cat_index.shape[0]
+def dummylize(array,cat_index,sql):
+    column_names=columnNames(sql) #더미화된 결과 컬럼이름 받기위해 sql 을 받아오기로 함. 
+    print '\nbefore dummylize, ',array.shape[1],' columns. ' 
+    print 'got index 5 columns',cat_index.shape[0]
     i=0 # numpy 배열은 enumerate 사용불가라서 어쩔수없이.. 
     for cat_yn in cat_index:
         if cat_yn :
             #print(pandas.get_dummies(array[:,i]))
-            array=numpy.concatenate((array,numpy.array(pandas.get_dummies(array[:,i]),dtype='float32')-0.5),1) 
+            dummy_array=pandas.get_dummies(array[:,i]) # dummy array 를 만들어서
+            array=numpy.concatenate((array,numpy.array(dummy_array,dtype='float32')-0.5),1) #기존 배열에 추가
             #-0.5는 전체데이터를 -0.5~+0.5 했는데 dummy는 0,1 나와서 빼준거. 나중에 normalize 하면 500메가 넘게 나옴. normalize 안하거나 빼서만들면 75메가.
+            for item in dummy_array.columns: #pandas 가 만든 더미배열의 컬럼 각각에 대해
+                column_names=numpy.append(column_names,column_names[i]+'_'+str(item)) #컬럼네임 배열에 _ 붙여 추가하기
         i+=1
     i=0
     for cat_yn in reversed(cat_index):
         position = len(cat_index)-i-1
         if cat_yn :
             #print position
-            array=numpy.delete(array,position,1)
+            array=numpy.delete(array,position,1) #뒤에서부터 더미로 바꾼 원본 컬럼 삭제. 앞에서부터 하면 i 가 달라져서 안됨 
+            column_names=numpy.delete(column_names,position,0) #컬럼네임도 똑같이 삭제
         i+=1
+    #print(column_names)
     print 'after dummylyze, ',array.shape[1],' columns.'
-    return array
+    return column_names, array
 
     
 
 try:
     #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
-    cucntt_y=normalize(numpy.array(allFloat(getdata("cucntt",1)),dtype="float32"))
+    cucntt_y=numpy.array(allFloat(getdata("cucntt",1)),dtype="float32")
     #print'cucntt_y volume : ',cucntt_y.shape
-    cucntt_n=normalize(numpy.array(allFloat(getdata("cucntt",0)),dtype="float32"))
+    cucntt_n=numpy.array(allFloat(getdata("cucntt",0)),dtype="float32")
     #print'cucntt_n volume : ',cucntt_n.shape
-    cuclaim_y=normalize(numpy.array(allFloat(getdata("cuclaim",1)),dtype="float32"))
+    cuclaim_y=numpy.array(allFloat(getdata("cuclaim",1)),dtype="float32")
     #print'cuclaim_y volume : ',cuclaim_y.shape
-    cuclaim_n=normalize(numpy.array(allFloat(getdata("cuclaim",0)),dtype="float32"))
+    cuclaim_n=numpy.array(allFloat(getdata("cuclaim",0)),dtype="float32")
     #print'cuclaim_n volume : ',cuclaim_n.shape
 
 
-    #dummy화                                #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
-    afterdummy_variables_limit=150   #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
-    cucntt=numpy.concatenate((cucntt_y,cucntt_n),0)
-    cuclaim=numpy.concatenate((cuclaim_y,cuclaim_n),0)
-    cucntt=dummylize(cucntt,autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,afterdummy_variables_limit)))
-    cuclaim=dummylize(cuclaim,autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit)))
-    cucntt_y=cucntt[:cucntt_y.shape[0]]
+
+    #dummy화                 
+    cucntt =numpy.concatenate((cucntt_y,cucntt_n),0)#더미화 위해 잠시 테이블 합침
+    cuclaim=numpy.concatenate((cuclaim_y,cuclaim_n),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
+    #아래는 자동으로 카테고리 컬럼이 뭔지 생성. 
+    afterdummy_variables_limit=0.01  #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
+                                                #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
+    cucntt_cat_tf_index=autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,afterdummy_variables_limit)) #자동변수 . 아니면 수동으로
+    cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit))
+    cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt) #더미화 실행
+    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim)
+    cucntt=normalize(cucntt) #normalize
+    claim=normalize(cuclaim)
+    cucntt_y=cucntt[:cucntt_y.shape[0]] #합쳤던 테이블 분리
     cucntt_n=cucntt[cucntt_y.shape[0]:]
     cuclaim_y=cuclaim[:cuclaim_y.shape[0]]
     cuclaim_n=cuclaim[cuclaim_n.shape[0]:]
-    del cucntt, cuclaim
+    del cucntt, cuclaim #메모리를 위해. 
 
 
     #라벨링한뒤에 class들 합치기
@@ -197,7 +217,9 @@ try:
         'test_cuclaim_label' : test_cuclaim_label,
         'test_cuclaim_data' : test_cuclaim_data,
         'train_cuclaim_label' : train_cuclaim_label,
-        'train_cuclaim_data' : train_cuclaim_data
+        'train_cuclaim_data' : train_cuclaim_data,
+        'cucntt_column_names' : cucntt_cnames,
+        'cuclaim_column_names' : cuclaim_cnames
         }
     pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
     f.close()

@@ -6,7 +6,7 @@ import numpy
 import os
 import pandas
 
-
+column_names = numpy.array('a,b,c,d,e'.split(","))
 
 def autoCategoricalIndex(array,n_category_limit=100): #numpy array 받음
     #유니크 자료수가 100개 미만이면 categorical 로 분류해 [true, false, false,.... ] 로 만들어 내보낸다.
@@ -36,21 +36,29 @@ def showCategoricalLimit(array,total_variable_limit=0.01): #기본값으로 데�
 
 
 def dummylize(array,cat_index):
-    print 'this array has ',array.shape[1],' columns.  got index ',cat_index.shape[0]
+    global column_names
+    print '\nbefore dummylize, ',array.shape[1],' columns. ' 
+    print 'got index 5 columns',cat_index.shape[0]
     i=0 # numpy 배열은 enumerate 사용불가라서 어쩔수없이.. 
     for cat_yn in cat_index:
         if cat_yn :
-            print(pandas.get_dummies(array[:,i]))
-            array=numpy.concatenate((array,numpy.array(pandas.get_dummies(array[:,i]),dtype='float32')),1)
+            #print(pandas.get_dummies(array[:,i]))
+            dummy_array=pandas.get_dummies(array[:,i]) # dummy array 를 만들어서
+            array=numpy.concatenate((array,numpy.array(dummy_array,dtype='float32')-0.5),1) #기존 배열에 추가
+            #-0.5는 전체데이터를 -0.5~+0.5 했는데 dummy는 0,1 나와서 빼준거. 나중에 normalize 하면 500메가 넘게 나옴. normalize 안하거나 빼서만들면 75메가.
+            for item in dummy_array.columns: #pandas 가 만든 더미배열의 컬럼 각각에 대해
+                column_names=numpy.append(column_names,column_names[i]+'_'+str(item)) #컬럼네임 배열에 _ 붙여 추가하기
         i+=1
     i=0
     for cat_yn in reversed(cat_index):
         position = len(cat_index)-i-1
         if cat_yn :
             #print position
-            array=numpy.delete(array,position,1)
+            array=numpy.delete(array,position,1) #뒤에서부터 더미로 바꾼 원본 컬럼 삭제. 앞에서부터 하면 i 가 달라져서 안됨 
+            column_names=numpy.delete(column_names,position,0) #컬럼네임도 똑같이 삭제
         i+=1
-    return array
+    print 'after dummylyze, ',array.shape[1],' columns.'
+    return column_names, array
 
 
 a=numpy.matrix([0,0,0,0,0,0,0,0,1,1])
@@ -60,6 +68,7 @@ d=numpy.matrix([1,2,3,4,5,1,2,3,4,5])
 e=numpy.matrix([1,2,3,4,5,6,7,8,9,10])
 f=numpy.array(numpy.concatenate((a.T,b.T,c.T,d.T,e.T),1))
 print(f)
-
-print(dummylize(f,autoCategoricalIndex(f,showCategoricalLimit(f,0.5))))
+a,b=dummylize(f,autoCategoricalIndex(f,showCategoricalLimit(f,0.5)))
+print a
+print b
 
