@@ -181,8 +181,8 @@ try:
                                                 #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
     cucntt_cat_tf_index=autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,afterdummy_variables_limit)) #자동변수 . 아니면 수동으로
     cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit))
-    cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt,1) #더미화 실행, 안하려면 이 줄 삭제가 아니라 옵션에 ,0 넣기
-    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim,1)
+    cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt,0) #더미화 실행, 안하려면 이 줄 삭제가 아니라 옵션에 ,0 넣기
+    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim,0)
     cucntt=normalize(cucntt) #합친김에 normalize
     cuclaim=normalize(cuclaim)
     cucntt_y=cucntt[:cucntt_y.shape[0]] #합쳤던 테이블 분리
@@ -231,7 +231,7 @@ try:
     f.close()
     print '\npicklize finished.   Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte'
 
-    #pickletest(pickle_name)
+    pickletest(pickle_name)
 
 finally:
     print("closing")
