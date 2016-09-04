@@ -165,10 +165,12 @@ try:
     afterdummy_variables_limit=100  #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
                                                 #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
     data_cat_tf_index=autoCategoricalIndex(data_sql, showCategoricalLimit(data_sql,afterdummy_variables_limit)) #자동변수 . 아니면 수동으로
+    #print  'data_cat_tf_index : ',data_cat_tf_index,data_cat_tf_index.shape
     data_cnames, data_dummylized = dummylize(data_sql, data_cat_tf_index, sql,1)
-    data_sql=normalize(data_sql) #합친김에 normalize
-    data_corr = corrMatrix(data_sql)
-
+    data_dummylized = normalize(data_dummylized)
+    data_corr = corrMatrix(data_dummylized)
+    print 'data_dummylized_shape : ',data_dummylized.shape
+    print 'correlation data shape : ',data_corr.shape
 
     #picklelize
     pickle_name='data_corr.pickle'
