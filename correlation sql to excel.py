@@ -114,10 +114,10 @@ def showCategoricalLimit(array,total_variable_limit=0.01): #기본값으로 데�
 
 def dummylize(array,cat_index,sql,dummylize=1):
     if dummylize==0:
-        cat_index=numpy.zeros(cat_index.shape[0])
+        cat_index=numpy.zeros(cat_index.shape[0]) #dummylize 안하기로하면 죄다 FALSE 로 세팅
     column_names=columnNames(sql) #더미화된 결과 컬럼이름 받기위해 sql 을 받아오기로 함. 
     print '\nbefore dummylize, ',array.shape[1],' columns. ' 
-    print 'got index 5 columns',cat_index.shape[0]
+    print 'categorical? YN index size : ',cat_index.shape[0]
     i=0 # numpy 배열은 enumerate 사용불가라서 어쩔수없이.. 
     for cat_yn in cat_index:
         if cat_yn :
