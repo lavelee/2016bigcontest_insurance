@@ -8,6 +8,7 @@ import numpy
 import os
 import pandas
 import xlwt
+import scipy.stats
 
 #서버접속 설정과 한글사용위한 인코딩 설정
 mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix')
@@ -133,11 +134,27 @@ def dummylize(array,cat_index,sql,dummylize=1):
     print 'after dummylyze, ',array.shape[1],' columns.'
     return column_names, array
 
-
-def corrMatrix(dim2_array): #2차원배열 아니면 오류남.
+def corrSpearman(dim2_array): #한방에 하니 메모리가 수십기가 필요. 메모리를 적게 쓰기위해 spearman 을 for로 구현. 
 	dim2_array=numpy.array(dim2_array)
-	print(dim2_array.T)
-	return numpy.corrcoef(dim2_array.T)
+	n_col=dim2_array.shape[1]
+	corrsp_result=numpy.zeros((n_col,n_col))
+	corrsp_pvalue=numpy.zeros((n_col,n_col))
+	print '\nspearman correlation coefficient calculation initialized. \nthis may take few minutes if array is big.'
+	for col in range(0,n_col):
+		print 'processing rows : ', col,'/',n_col #시간이 많이 걸리니까 진행도 표시. 
+		for col2 in range(0,n_col):
+			corrsp_result[col,col2] , corrsp_pvalue[col,col2] = scipy.stats.spearmanr(dim2_array[:,col],dim2_array[:,col2])
+	print'spearman -finished.\n'
+			#print n_col,n_col2,' spearmanr : ',scipy.stats.spearmanr(f[:,n_col],f[:,n_col2])
+	#print corrsp_result
+	#print corrsp_pvalue
+	return corrsp_result, corrsp_pvalue
+
+def corrPearson(dim2_array): #2차원배열 아니면 오류남.
+	dim2_array=numpy.array(dim2_array)
+	#print(dim2_array.T)
+	result = numpy.corrcoef(dim2_array.T)
+	return result #리턴 하나
 
 def pickleread(pickle_name):
     with open(pickle_name,'rb') as f:
@@ -168,7 +185,10 @@ try:
     #print  'data_cat_tf_index : ',data_cat_tf_index,data_cat_tf_index.shape
     data_cnames, data_dummylized = dummylize(data_sql, data_cat_tf_index, sql,1)
     data_dummylized = normalize(data_dummylized)
-    data_corr = corrMatrix(data_dummylized)
+
+    data_pvalue=[]  #아래에서 골라쓰세영
+    #data_corr = corrPearson(data_dummylized)
+    data_corr , data_pvalue = corrSpearman(data_dummylized)
     print 'data_dummylized_shape : ',data_dummylized.shape
     print 'correlation data shape : ',data_corr.shape
 
@@ -176,8 +196,9 @@ try:
     pickle_name='data_corr.pickle'
     f = open(pickle_name,'wb')
     save={
-        'data_corr_coeff' : data_corr,
-        'category_names' : data_cnames,
+        'correlation coeff' : data_corr,
+        'category names' : data_cnames,
+        'pvalue pearson' : data_pvalue
         }
     pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
     f.close()
