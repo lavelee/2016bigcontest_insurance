@@ -19,9 +19,15 @@ cur.execute('SET CHARACTER SET utf8;')
 cur.execute('SET character_set_connection=utf8;')
 
 #cucntt
-#sql="SELECT CUST_ROLE, IRKD_CODE_DTAL, IRKD_CODE_ITEM, GOOD_CLSF_CDNM, CNTT_YM, CLLT_FP_PRNO, REAL_PAYM_TERM, SALE_CHNL_CODE, CNTT_STAT_CODE, EXPR_YM, EXTN_YM, LAPS_YM, PAYM_CYCL_CODE, MAIN_INSR_AMT, SUM_ORIG_PREM, RECP_PUBL, CNTT_RECP, MNTH_INCM_AMT, DISTANCE, SEX, AGE, RESI_COST, RESI_TYPE_CODE, FP_CAREER, CUST_RGST, CTPR, OCCP_GRP1, OCCP_GRP2, TOTALPREM, MINCRDT, MAXCRDT, WEDD_YN, MATE_OCCP_GRP1, MATE_OCCP_GRP2, CHLD_CNT, LTBN_CHLD_AGE, MAX_PAYM_YM, MAX_PRM, CUST_INCM, RCBASE_HSHD_INCM, JPBASE_HSHD_INCM, cust.SIU_CUST_YN FROM cntt LEFT JOIN cust ON cntt.CUST_ID=cust.CUST_ID"
+#sql="SELECT SIU_CUST_YN, CUST_ROLE, IRKD_CODE_DTAL, IRKD_CODE_ITEM, GOOD_CLSF_CDNM, CNTT_YM, CLLT_FP_PRNO, REAL_PAYM_TERM, SALE_CHNL_CODE, CNTT_STAT_CODE, EXPR_YM, EXTN_YM, LAPS_YM, PAYM_CYCL_CODE, MAIN_INSR_AMT, SUM_ORIG_PREM, RECP_PUBL, CNTT_RECP, MNTH_INCM_AMT, DISTANCE, SEX, AGE, RESI_COST, RESI_TYPE_CODE, FP_CAREER, CUST_RGST, CTPR, OCCP_GRP1, OCCP_GRP2, TOTALPREM, MINCRDT, MAXCRDT, WEDD_YN, MATE_OCCP_GRP1, MATE_OCCP_GRP2, CHLD_CNT, LTBN_CHLD_AGE, MAX_PAYM_YM, MAX_PRM, CUST_INCM, RCBASE_HSHD_INCM, JPBASE_HSHD_INCM FROM cntt LEFT JOIN cust ON cntt.CUST_ID=cust.CUST_ID"
 #cuclaim
-sql="SELECT ACCI_OCCP_GRP1, ACCI_OCCP_GRP2, CHANG_FP_YN, RECP_DATE, ORIG_RESN_DATE, RESN_DATE, CRNT_PROG_DVSN, ACCI_DVSN, CAUS_CODE, CAUS_CODE_DTAL, DMND_RESN_CODE, DMND_RSCD_SQNO, HOSP_OTPA_STDT, HOSP_OTPA_ENDT, RESL_CD1, VLID_HOSP_OTDA, HOUSE_HOSP_DIST, HOSP_CODE, ACCI_HOSP_ADDR, HOSP_SPEC_DVSN, CHME_LICE_NO, PAYM_DATE, DMND_AMT, PAYM_AMT, PMMI_DLNG_YN, SELF_CHAM, NON_PAY, TAMT_SFCA, PATT_CHRG_TOTA, DSCT_AMT, COUNT_TRMT_ITEM, DCAF_CMPS_XCPA, NON_PAY_RATIO, HEED_HOSP_YN, SEX, AGE, RESI_COST, RESI_TYPE_CODE, FP_CAREER, CUST_RGST, CTPR, OCCP_GRP1, OCCP_GRP2, TOTALPREM, MINCRDT, MAXCRDT, WEDD_YN, MATE_OCCP_GRP1, MATE_OCCP_GRP2, CHLD_CNT, LTBN_CHLD_AGE, MAX_PAYM_YM, MAX_PRM, CUST_INCM, RCBASE_HSHD_INCM, JPBASE_HSHD_INCM, SIU_CUST_YN from claim left join cust on claim.CUST_ID=cust.CUST_ID"
+sql="SELECT SIU_CUST_YN, ACCI_OCCP_GRP1, ACCI_OCCP_GRP2, CHANG_FP_YN, RECP_DATE, ORIG_RESN_DATE, RESN_DATE, CRNT_PROG_DVSN, ACCI_DVSN, CAUS_CODE, CAUS_CODE_DTAL, DMND_RESN_CODE, DMND_RSCD_SQNO, HOSP_OTPA_STDT, HOSP_OTPA_ENDT, RESL_CD1, VLID_HOSP_OTDA, HOUSE_HOSP_DIST, HOSP_CODE, ACCI_HOSP_ADDR, HOSP_SPEC_DVSN, CHME_LICE_NO, PAYM_DATE, DMND_AMT, PAYM_AMT, PMMI_DLNG_YN, SELF_CHAM, NON_PAY, TAMT_SFCA, PATT_CHRG_TOTA, DSCT_AMT, COUNT_TRMT_ITEM, DCAF_CMPS_XCPA, NON_PAY_RATIO, HEED_HOSP_YN, SEX, AGE, RESI_COST, RESI_TYPE_CODE, FP_CAREER, CUST_RGST, CTPR, OCCP_GRP1, OCCP_GRP2, TOTALPREM, MINCRDT, MAXCRDT, WEDD_YN, MATE_OCCP_GRP1, MATE_OCCP_GRP2, CHLD_CNT, LTBN_CHLD_AGE, MAX_PAYM_YM, MAX_PRM, CUST_INCM, RCBASE_HSHD_INCM, JPBASE_HSHD_INCM from claim left join cust on claim.CUST_ID=cust.CUST_ID"
+#corrfunc = 'pearson'  #by rank , slow
+corrfunc = 'spearman' #by native value, fast
+ifdummy = 1 # dummylize or not dummylize
+afterdummylimit = 100 #0~1 for ratio, >1 for number. should be larger than data columns
+   #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
+   #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
 
 def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우 단어 받아서 컬럼네임 배열로 출력. 
     sql=sql.upper()
@@ -177,29 +183,36 @@ def sheetmake(data):
 
 
 try:
+    print('initialized. retriving data from DATABASE. please wait')
     #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
     data_sql=numpy.array(allFloat(getdata(sql)),dtype="float32")
-    afterdummy_variables_limit=100  #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
-                                                #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
-    data_cat_tf_index=autoCategoricalIndex(data_sql, showCategoricalLimit(data_sql,afterdummy_variables_limit)) #자동변수 . 아니면 수동으로
+    data_cat_tf_index=autoCategoricalIndex(data_sql, showCategoricalLimit(data_sql,afterdummylimit)) #자동변수 . 아니면 수동으로
     #print  'data_cat_tf_index : ',data_cat_tf_index,data_cat_tf_index.shape
-    data_cnames, data_dummylized = dummylize(data_sql, data_cat_tf_index, sql,1)
+    data_cnames, data_dummylized = dummylize(data_sql, data_cat_tf_index, sql, ifdummy)
     data_dummylized = normalize(data_dummylized)
 
-    data_pvalue=[]  #아래에서 골라쓰세영
-    #data_corr = corrPearson(data_dummylized)
-    data_corr , data_pvalue = corrSpearman(data_dummylized)
+    data_pvalue=numpy.zeros((data_dummylized.shape[1],data_dummylized.shape[1]))  #스피어만은 pvalue가 없지만 pickle 에서 오류나서 만들어줌 
+
+    if corrfunc=='spearman':  #코드 처음에 적은 분류에 따라서 코릴레이션 방법 선택
+    	data_corr , data_pvalue = corrSpearman(data_dummylized)
+    elif corrfunc=='pearson':
+    	data_corr = corrPearson(data_dummylized)
+    else : 
+    	raise NameError('enter correct correation function name!')
+
     print 'data_dummylized_shape : ',data_dummylized.shape
     print 'correlation data shape : ',data_corr.shape
+    print 'pvalue shape : ',data_pvalue.shape
 
     #picklelize
     pickle_name='data_corr.pickle'
     f = open(pickle_name,'wb')
     save={
         'correlation coeff' : data_corr,
+        'p-value' : data_pvalue,
         'category names' : data_cnames,
-        'pvalue pearson' : data_pvalue
         }
+
     pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
     f.close()
     print '\npicklize finished.   Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte'
@@ -209,8 +222,8 @@ try:
 	os.remove(excel_name)
 	print('target excel file exists. continue after deleting')
     sheetmake(pickleread(pickle_name))
-
     os.remove(pickle_name)#피클 제거
+
 
 finally:
     print("closing")
