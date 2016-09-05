@@ -7,7 +7,7 @@ import pickle
 import numpy
 import os
 import pandas
-import xlwt
+import openpyxl
 import scipy.stats
 
 #서버접속 설정과 한글사용위한 인코딩 설정
@@ -22,10 +22,10 @@ cur.execute('SET character_set_connection=utf8;')
 #sql="SELECT SIU_CUST_YN, CUST_ROLE, IRKD_CODE_DTAL, IRKD_CODE_ITEM, GOOD_CLSF_CDNM, CNTT_YM, CLLT_FP_PRNO, REAL_PAYM_TERM, SALE_CHNL_CODE, CNTT_STAT_CODE, EXPR_YM, EXTN_YM, LAPS_YM, PAYM_CYCL_CODE, MAIN_INSR_AMT, SUM_ORIG_PREM, RECP_PUBL, CNTT_RECP, MNTH_INCM_AMT, DISTANCE, SEX, AGE, RESI_COST, RESI_TYPE_CODE, FP_CAREER, CUST_RGST, CTPR, OCCP_GRP1, OCCP_GRP2, TOTALPREM, MINCRDT, MAXCRDT, WEDD_YN, MATE_OCCP_GRP1, MATE_OCCP_GRP2, CHLD_CNT, LTBN_CHLD_AGE, MAX_PAYM_YM, MAX_PRM, CUST_INCM, RCBASE_HSHD_INCM, JPBASE_HSHD_INCM FROM cntt LEFT JOIN cust ON cntt.CUST_ID=cust.CUST_ID"
 #cuclaim
 sql="SELECT SIU_CUST_YN, ACCI_OCCP_GRP1, ACCI_OCCP_GRP2, CHANG_FP_YN, RECP_DATE, ORIG_RESN_DATE, RESN_DATE, CRNT_PROG_DVSN, ACCI_DVSN, CAUS_CODE, CAUS_CODE_DTAL, DMND_RESN_CODE, DMND_RSCD_SQNO, HOSP_OTPA_STDT, HOSP_OTPA_ENDT, RESL_CD1, VLID_HOSP_OTDA, HOUSE_HOSP_DIST, HOSP_CODE, ACCI_HOSP_ADDR, HOSP_SPEC_DVSN, CHME_LICE_NO, PAYM_DATE, DMND_AMT, PAYM_AMT, PMMI_DLNG_YN, SELF_CHAM, NON_PAY, TAMT_SFCA, PATT_CHRG_TOTA, DSCT_AMT, COUNT_TRMT_ITEM, DCAF_CMPS_XCPA, NON_PAY_RATIO, HEED_HOSP_YN, SEX, AGE, RESI_COST, RESI_TYPE_CODE, FP_CAREER, CUST_RGST, CTPR, OCCP_GRP1, OCCP_GRP2, TOTALPREM, MINCRDT, MAXCRDT, WEDD_YN, MATE_OCCP_GRP1, MATE_OCCP_GRP2, CHLD_CNT, LTBN_CHLD_AGE, MAX_PAYM_YM, MAX_PRM, CUST_INCM, RCBASE_HSHD_INCM, JPBASE_HSHD_INCM from claim left join cust on claim.CUST_ID=cust.CUST_ID"
-#corrfunc = 'pearson'  #by rank , slow
-corrfunc = 'spearman' #by native value, fast
+#corrfunc = 'spearman'  #by rank , slow
+corrfunc = 'pearson' #by native value, fast
 ifdummy = 1 # dummylize or not dummylize
-afterdummylimit = 100 #0~1 for ratio, >1 for number. should be larger than data columns
+afterdummylimit = 0.01 #0~1 for ratio, >1 for number. should be larger than data columns
    #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
    #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
 
@@ -169,15 +169,19 @@ def pickleread(pickle_name):
 
 def sheetmake(data):
     global pickle_name,excel_name
-    book = xlwt.Workbook()
+    book = openpyxl.Workbook()
     for dictitle , dictdata in data.items():
         dictdata=numpy.matrix(dictdata) #1차원 배열 있으면 shape 차원 하나라 오류나서.
-        sheet=book.add_sheet(dictitle)
-        for n_row in range(0,dictdata.shape[0]):
-            for n_col in range(0,dictdata.shape[1]):
-                value=numpy.asscalar(dictdata[n_row,n_col])
-                sheet.row(n_row).write(n_col,value)
+        sheet=book.create_sheet(title=dictitle)
+        for n_col in range(0,dictdata.shape[1]):
+            for n_row in range(0,dictdata.shape[0]):
+                input_value=numpy.asscalar(dictdata[n_row,n_col])
+                sheet.cell(row=n_row+1,column=n_col+1).value=input_value #엑셀에선 행,열 첫번호가 1 
+            sheet.column_dimensions[openpyxl.cell.get_column_letter(n_col+1)].width = 2.76 #컬럼 넓이 조절. 필요 없으면 빼기
         print 'making sheet : ',dictitle
+    sheet = book.get_sheet_by_name('Sheet') #select sheet named Sheet
+    book.remove_sheet(sheet) #delete that sheet
+    print 'saving data to excel...'
     book.save(excel_name)
     print 'finished, file saved : ',excel_name
 
@@ -208,20 +212,21 @@ try:
     pickle_name='data_corr.pickle'
     f = open(pickle_name,'wb')
     save={
-        'correlation coeff' : data_corr,
+        'corr_coeff' : data_corr,
         'p-value' : data_pvalue,
-        'category names' : data_cnames,
-        }
+        'c_names' : data_cnames,
+        } # 이 순서가 시트 순서가 됨. 
 
     pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
     f.close()
     print '\npicklize finished.   Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte'
 
-    excel_name=pickle_name[:pickle_name.find(".pickle")]+'.xls'
+#엑셀파일 저장
+    excel_name=pickle_name[:pickle_name.find(".pickle")]+'.xlsx'
     if os.path.isfile(excel_name): #이미 파일이 있으면 삭제함 #엑셀파일이 열려있으면 삭제도 못하고 오류남. 
 	os.remove(excel_name)
 	print('target excel file exists. continue after deleting')
-    sheetmake(pickleread(pickle_name))
+    sheetmake(pickleread(pickle_name)) #피클읽어 그대로 sheet 로 출력. 
     os.remove(pickle_name)#피클 제거
 
 
