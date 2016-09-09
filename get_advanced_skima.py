@@ -4,7 +4,7 @@
 import MySQLdb, pickle, os
 
 #서버접속 설정과 한글사용위한 인코딩 설정
-mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance')
+mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix')
 cur=mydb.cursor()
 mydb.set_character_set('utf8')
 cur.execute('SET NAMES utf8;')
@@ -50,7 +50,7 @@ def getAdvSkima(database_name='insurance'):
         #print(db_skima[table])
     return db_skima
 
-#평균과 분산 삽입이 잘 되었나 확인하려고 만듬. db_skima 를 addFeature 로 adv_skima로 만들고 , advSkima[테이블명][컬럼명,평균,분산] 순으로 가져옴. 
+#평균과 분산 삽입이 잘 되었나 확인하려고 만듬. db_skima 를 addFeature 로 adv_skima로 만들고 , advSkima[테이블명][컬럼명,평균,분산,최소,최대] 순으로 가져옴. 
 def test_advSkima(test_tablename='claim'):
     test_skima=getAdvSkima()
     for column in test_skima[test_tablename]: #test table name
@@ -61,7 +61,7 @@ def test_advSkima(test_tablename='claim'):
         print'field type         : ',column[3],'\n'
 
 def pickler(pickle_filename='adv_skima.pickle'):
-    f = open(pickle_filename,'wb')
+    f = open(pickle_filename,'wb') #윈도우라서 b 붙음.
     pickle.dump(getAdvSkima(),f,pickle.HIGHEST_PROTOCOL)
     f.close()
     print'pickle finished.  Size : ',os.stat(pickle_filename).st_size
