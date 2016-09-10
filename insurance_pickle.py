@@ -16,9 +16,122 @@ cur.execute('SET NAMES utf8;')
 cur.execute('SET CHARACTER SET utf8;')
 cur.execute('SET character_set_connection=utf8;')
 
+ifdummy=0
+
 #query . 끝에 Y/N 은 제외했다 나중에 붙임.
-sql_cucntt="SELECT CUST_ROLE, IRKD_CODE_DTAL, IRKD_CODE_ITEM, GOOD_CLSF_CDNM, CNTT_YM, CLLT_FP_PRNO, REAL_PAYM_TERM, SALE_CHNL_CODE, CNTT_STAT_CODE, EXPR_YM, EXTN_YM, LAPS_YM, PAYM_CYCL_CODE, MAIN_INSR_AMT, SUM_ORIG_PREM, RECP_PUBL, CNTT_RECP, MNTH_INCM_AMT, DISTANCE, SEX, AGE, RESI_COST, RESI_TYPE_CODE, FP_CAREER, CUST_RGST, CTPR, OCCP_GRP1, OCCP_GRP2, TOTALPREM, MINCRDT, MAXCRDT, WEDD_YN, MATE_OCCP_GRP1, MATE_OCCP_GRP2, CHLD_CNT, LTBN_CHLD_AGE, MAX_PAYM_YM, MAX_PRM, CUST_INCM, RCBASE_HSHD_INCM, JPBASE_HSHD_INCM FROM cntt LEFT JOIN cust ON cntt.CUST_ID=cust.CUST_ID WHERE cust.SIU_CUST_YN="
-sql_cuclaim="SELECT ACCI_OCCP_GRP1, ACCI_OCCP_GRP2, CHANG_FP_YN, RECP_DATE, ORIG_RESN_DATE, RESN_DATE, CRNT_PROG_DVSN, ACCI_DVSN, CAUS_CODE, CAUS_CODE_DTAL, DMND_RESN_CODE, DMND_RSCD_SQNO, HOSP_OTPA_STDT, HOSP_OTPA_ENDT, RESL_CD1, VLID_HOSP_OTDA, HOUSE_HOSP_DIST, HOSP_CODE, ACCI_HOSP_ADDR, HOSP_SPEC_DVSN, CHME_LICE_NO, PAYM_DATE, DMND_AMT, PAYM_AMT, PMMI_DLNG_YN, SELF_CHAM, NON_PAY, TAMT_SFCA, PATT_CHRG_TOTA, DSCT_AMT, COUNT_TRMT_ITEM, DCAF_CMPS_XCPA, NON_PAY_RATIO, HEED_HOSP_YN, SEX, AGE, RESI_COST, RESI_TYPE_CODE, FP_CAREER, CUST_RGST, CTPR, OCCP_GRP1, OCCP_GRP2, TOTALPREM, MINCRDT, MAXCRDT, WEDD_YN, MATE_OCCP_GRP1, MATE_OCCP_GRP2, CHLD_CNT, LTBN_CHLD_AGE, MAX_PAYM_YM, MAX_PRM, CUST_INCM, RCBASE_HSHD_INCM, JPBASE_HSHD_INCM from claim left join cust on claim.CUST_ID=cust.CUST_ID where cust.SIU_CUST_YN="
+sql_cucntt="""Select
+  cntt.CUST_ROLE,
+  cntt.IRKD_CODE_DTAL,
+  cntt.IRKD_CODE_ITEM,
+  cntt.GOOD_CLSF_CDNM,
+  cntt.CNTT_YM,
+  cntt.CLLT_FP_PRNO,
+  cntt.REAL_PAYM_TERM,
+  cntt.SALE_CHNL_CODE,
+  cntt.CNTT_STAT_CODE,
+  cntt.EXPR_YM,
+  cntt.EXTN_YM,
+  cntt.LAPS_YM,
+  cntt.PAYM_CYCL_CODE,
+  cntt.MAIN_INSR_AMT,
+  cntt.SUM_ORIG_PREM,
+  cntt.RECP_PUBL,
+  cntt.CNTT_RECP,
+  cntt.MNTH_INCM_AMT,
+  cntt.DISTANCE,
+  cust.SEX,
+  cust.AGE,
+  cust.RESI_COST,
+  cust.RESI_TYPE_CODE,
+  cust.FP_CAREER,
+  cust.CUST_RGST,
+  cust.CTPR,
+  cust.OCCP_GRP1,
+  cust.OCCP_GRP2,
+  cust.TOTALPREM,
+  cust.MINCRDT,
+  cust.MAXCRDT,
+  cust.WEDD_YN,
+  cust.MATE_OCCP_GRP1,
+  cust.MATE_OCCP_GRP2,
+  cust.CHLD_CNT,
+  cust.LTBN_CHLD_AGE,
+  cust.MAX_PAYM_YM,
+  cust.MAX_PRM,
+  cust.CUST_INCM,
+  cust.RCBASE_HSHD_INCM,
+  cust.JPBASE_HSHD_INCM
+From
+  cntt Left Join
+  cust
+    On cntt.CUST_ID = cust.CUST_ID
+Where
+  cust.SIU_CUST_YN ="""
+
+
+sql_cuclaim="""Select
+  claim.ACCI_OCCP_GRP1,
+  claim.ACCI_OCCP_GRP2,
+  claim.CHANG_FP_YN,
+  claim.RECP_DATE,
+  claim.ORIG_RESN_DATE,
+  claim.RESN_DATE,
+  claim.CRNT_PROG_DVSN,
+  claim.ACCI_DVSN,
+  claim.CAUS_CODE,
+  claim.CAUS_CODE_DTAL,
+  claim.DMND_RESN_CODE,
+  claim.DMND_RSCD_SQNO,
+  claim.HOSP_OTPA_STDT,
+  claim.HOSP_OTPA_ENDT,
+  claim.RESL_CD1,
+  claim.VLID_HOSP_OTDA,
+  claim.HOUSE_HOSP_DIST,
+  claim.HOSP_CODE,
+  claim.ACCI_HOSP_ADDR,
+  claim.HOSP_SPEC_DVSN,
+  claim.CHME_LICE_NO,
+  claim.PAYM_DATE,
+  claim.DMND_AMT,
+  claim.PAYM_AMT,
+  claim.PMMI_DLNG_YN,
+  claim.SELF_CHAM,
+  claim.NON_PAY,
+  claim.TAMT_SFCA,
+  claim.PATT_CHRG_TOTA,
+  claim.DSCT_AMT,
+  claim.COUNT_TRMT_ITEM,
+  claim.DCAF_CMPS_XCPA,
+  claim.NON_PAY_RATIO,
+  claim.HEED_HOSP_YN,
+  cust.SEX,
+  cust.AGE,
+  cust.RESI_COST,
+  cust.RESI_TYPE_CODE,
+  cust.FP_CAREER,
+  cust.CUST_RGST,
+  cust.CTPR,
+  cust.OCCP_GRP1,
+  cust.OCCP_GRP2,
+  cust.TOTALPREM,
+  cust.MINCRDT,
+  cust.MAXCRDT,
+  cust.WEDD_YN,
+  cust.MATE_OCCP_GRP1,
+  cust.MATE_OCCP_GRP2,
+  cust.CHLD_CNT,
+  cust.LTBN_CHLD_AGE,
+  cust.MAX_PAYM_YM,
+  cust.MAX_PRM,
+  cust.CUST_INCM,
+  cust.RCBASE_HSHD_INCM,
+  cust.JPBASE_HSHD_INCM
+From
+  claim Left Join
+  cust
+    On claim.CUST_ID = cust.CUST_ID
+Where
+  cust.SIU_CUST_YN = """
 
 def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우 단어 받아서 컬럼네임 배열로 출력. 
     sql=sql.upper()
@@ -181,8 +294,8 @@ try:
                                                 #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
     cucntt_cat_tf_index=autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,afterdummy_variables_limit)) #자동변수 . 아니면 수동으로
     cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit))
-    cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt,1) #더미화 실행, 안하려면 이 줄 삭제가 아니라 옵션에 ,0 넣기
-    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim,1)
+    cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt,ifdummy) #더미화 실행, 안하려면 이 줄 삭제가 아니라 옵션에 ,0 넣기
+    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim,ifdummy)
     cucntt=normalize(cucntt) #합친김에 normalize
     cuclaim=normalize(cuclaim)
     print 'cucntt shape : ',cucntt.shape
@@ -231,7 +344,7 @@ try:
         }
     pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
     f.close()
-    print '\npicklize finished.   Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte'
+    print '\npicklize finished.  filename :',pickle_name,' Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte'
 
     pickletest(pickle_name)
 
