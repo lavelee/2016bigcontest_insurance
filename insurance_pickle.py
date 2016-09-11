@@ -17,6 +17,7 @@ cur.execute('SET CHARACTER SET utf8;')
 cur.execute('SET character_set_connection=utf8;')
 
 ifdummy=0
+pickle_name='cucntt_cuclaim_null_randomfix.pickle' #만들어진 피클 이름. picklize 에서 쓴다. 
 
 #query . 끝에 Y/N 은 제외했다 나중에 붙임.
 sql_cucntt="""Select
@@ -61,13 +62,12 @@ sql_cucntt="""Select
   cust.CUST_INCM,
   cust.RCBASE_HSHD_INCM,
   cust.JPBASE_HSHD_INCM
-From
+  From
   cntt Left Join
   cust
     On cntt.CUST_ID = cust.CUST_ID
-Where
+  Where
   cust.SIU_CUST_YN ="""
-
 
 sql_cuclaim="""Select
   claim.ACCI_OCCP_GRP1,
@@ -126,11 +126,11 @@ sql_cuclaim="""Select
   cust.CUST_INCM,
   cust.RCBASE_HSHD_INCM,
   cust.JPBASE_HSHD_INCM
-From
+  From
   claim Left Join
   cust
     On claim.CUST_ID = cust.CUST_ID
-Where
+  Where
   cust.SIU_CUST_YN = """
 
 def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우 단어 받아서 컬럼네임 배열로 출력. 
@@ -242,7 +242,6 @@ def showCategoricalLimit(array,total_variable_limit=0.01): #기본값으로 데�
             #print 'Variable# sum expected after dummylize : ', n_total_variables-unq_sorted[i]
             return unq_sorted[i-1]+1 #가능한 가장 큰 값에 +1 함. 
 
-
 def dummylize(array,cat_index,sql,dummylize=1):
     if dummylize==0:
         cat_index=numpy.zeros(cat_index.shape[0])
@@ -271,10 +270,35 @@ def dummylize(array,cat_index,sql,dummylize=1):
     print 'after dummylyze, ',array.shape[1],' columns.'
     return column_names, array
 
-    
+def chkDistri(data, divide=10): #기본 값구간 10개로 나눔.  [총평균,총개수, 구간1평균,구간1개수, 구간2평균,구간2개수 ... ]
+    data=numpy.array(data,dtype='float32')
+    print '\n',data.shape, 'will be divided into ',divide,' sections. ',1./divide,' for each sectins   *total: -0.5~ +0.5)'
+    print 'A warning    \'RuntimeWarning: Mean of empty slice\'    can appear if there is no data in specific section. \n but that\'s OK'
+    distri=numpy.zeros((data.shape[1],2*(divide+1))) #컬럼수,쪼갬수(평균,개수 2개씩이라 *2, 총평균/개수 포함이라 +1)
+
+    for n_col in range(0,data.shape[1]): #컬럼별.
+        #print(data[:,col])
+        
+        data_col= numpy.sort(data[:,n_col]) #구간별로 쪼개기위해 커지는 순서로 정렬. ascending order
+        indicator = numpy.array([(slit+1)*1./divide-0.5 for slit in range(0,divide)],dtype='float32') #dtype 안맞추면 이상하게 비교함. 
+
+        for div_step in range(0,2): #평균을 divide 개로 나누는데 처음 한번은 전체평균과 개수를 넣고 두번째는 구간평균과 개수 넣으려 함. 
+            if div_step == 0 : #처음 3개는 전체평균, 전체개수, 조각개수를 구하고
+                distri[n_col,div_step]=numpy.average(data_col) #전체 평균
+                distri[n_col,div_step+1]=data_col.shape[0] #전체 개수
+
+            else: #첫번째가 아니면 -0.5~+0.5를 지정개수대로 쪼갠뒤 구간별 평균과 개수를 만든다.
+                index_array=numpy.searchsorted(data_col,indicator,side='right') #sort 된 컬럼에서 indecator 값들이 몇번째에 있는지 배열로 나타냄
+
+                item_prev=0
+                for i, item in enumerate(index_array): #인덱스번호를 index_array 로 한방에 만드는바람에 위치지정이 꼬였음. 
+                    #print i,item, div_step
+                    distri[n_col,2*(i+1)]= numpy.average(data_col[item_prev:item]) #구간별 평균을 삽입
+                    distri[n_col,2*(i+1)+1]= item - item_prev #구간별 개수를 삽입
+                    item_prev = item #현재값 저장
 
 try:
-    #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
+#자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
     cucntt_y=numpy.array(allFloat(getdata("cucntt",1)),dtype="float32")
     #print'cucntt_y volume : ',cucntt_y.shape
     cucntt_n=numpy.array(allFloat(getdata("cucntt",0)),dtype="float32")
@@ -284,9 +308,7 @@ try:
     cuclaim_n=numpy.array(allFloat(getdata("cuclaim",0)),dtype="float32")
     #print'cuclaim_n volume : ',cuclaim_n.shape
 
-
-
-    #dummy화                 
+#dummy화                 
     cucntt =numpy.concatenate((cucntt_y,cucntt_n),0)#더미화 위해 잠시 테이블 합침
     cuclaim=numpy.concatenate((cuclaim_y,cuclaim_n),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
     #아래는 자동으로 카테고리 컬럼이 뭔지 생성. 
@@ -306,8 +328,7 @@ try:
     cuclaim_n=cuclaim[cuclaim_n.shape[0]:]
     del cucntt, cuclaim #메모리를 위해. 
 
-
-    #라벨링한뒤에 class들 합치기
+#라벨링한뒤에 class들 합치기
     cucntt_label=numpy.concatenate((numpy.zeros(cucntt_y.shape[0])+1,numpy.zeros(cucntt_n.shape[0])),axis=0)
     cucntt_data=numpy.concatenate((cucntt_y,cucntt_n),axis=0)
     #print'cucntt label, data : ',cucntt_label.shape, cucntt_data.shape
@@ -315,38 +336,43 @@ try:
     cuclaim_data=numpy.concatenate((cuclaim_y,cuclaim_n),axis=0)
     #print'cuclaim label, data : ',cuclaim_label.shape, cuclaim_data.shape
 
-    #위치 섞기
+#위치 섞기
     cucntt_label, cucntt_data=randomize(cucntt_label,cucntt_data)
     cuclaim_label,cuclaim_data=randomize(cuclaim_label,cuclaim_data,)
     #print(cuclaim_label)
 
-    #test / train set 분리
+#test / train set 분리
     test_cucntt_label, test_cucntt_data, train_cucntt_label, train_cucntt_data = dataDivide(cucntt_label,cucntt_data)
     #print'test_cucntt_label , train_cucntt_label shape : ',test_cucntt_label.shape,train_cucntt_label.shape
     test_cuclaim_label, test_cuclaim_data, train_cuclaim_label, train_cuclaim_data = dataDivide(cuclaim_label,cuclaim_data)
     #print'test_cuclaim_label , train_cuclaim_label shape : ',test_cuclaim_label.shape,train_cuclaim_label.shape
 
+#train set distribution analysis [전체평균,전체개수,구간1평균, 구간1개수, 구간2평균, 구간2개수 ... ]
+    train_cucntt_distri = chkDistri(train_cucntt_data)
+    train_cuclaim_distri = chkDistri(train_cuclaim_data)
 
-    #picklelize
-    pickle_name='cucntt_cuclaim_null_randomfix.pickle'
+#picklelize
     f = open(pickle_name,'wb')
     save={
         'test_cucntt_label' : test_cucntt_label,
         'test_cucntt_data' : test_cucntt_data,
         'train_cucntt_label' : train_cucntt_label,
         'train_cucntt_data' : train_cucntt_data,
+        'cucntt_column_names' : cucntt_cnames,
+        'train_cucntt_distri' : train_cucntt_distri,
+
         'test_cuclaim_label' : test_cuclaim_label,
         'test_cuclaim_data' : test_cuclaim_data,
         'train_cuclaim_label' : train_cuclaim_label,
         'train_cuclaim_data' : train_cuclaim_data,
-        'cucntt_column_names' : cucntt_cnames,
-        'cuclaim_column_names' : cuclaim_cnames
+        'cuclaim_column_names' : cuclaim_cnames,
+        'train_cuclaim_distri' : train_cuclaim_distri
         }
     pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
     f.close()
     print '\npicklize finished.  filename :',pickle_name,' Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte'
-
     pickletest(pickle_name)
+
 
 finally:
     print("closing")
