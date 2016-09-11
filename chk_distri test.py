@@ -31,7 +31,14 @@ def chkDistri(data, divide=10): #기본 값구간 10개로 나눔.  [총평균,�
                 item_prev=0
                 for i, item in enumerate(index_array): #인덱스번호를 index_array 로 한방에 만드는바람에 위치지정이 꼬였음. 
                     #print i,item, div_step
-                    distri[n_col,2*(i+1)]= numpy.average(data_col[item_prev:item]) #구간별 평균을 삽입
+                    
+                    #개수는 0으로 표현되지만 평균은 개수가 0일때 nan 표기됨. 이건 nonetype 이 되어 모든 데이터를 nonetype 만들고, 나중에 pickle 화나 excel 변환시 타입오류 만듬.
+                    temp = numpy.average(data_col[item_prev:item])#구간별 평균을 삽입
+                    if not (temp==temp) : #nan 은 서로 == 연산해도 false 인걸 이용해서. 
+                        distri[n_col,2*(i+1)]= 0.
+                    else : 
+                        distri[n_col,2*(i+1)]= temp
+
                     distri[n_col,2*(i+1)+1]= item - item_prev #구간별 개수를 삽입
                     item_prev = item #현재값 저장
                     

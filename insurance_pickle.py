@@ -272,7 +272,7 @@ def dummylize(array,cat_index,sql,dummylize=1):
 
 def chkDistri(data, divide=10): #기본 값구간 10개로 나눔.  [총평균,총개수, 구간1평균,구간1개수, 구간2평균,구간2개수 ... ]
     data=numpy.array(data,dtype='float32')
-    print '\n',data.shape, 'will be divided into ',divide,' sections. ',1./divide,' for each sectins   *total: -0.5~ +0.5)'
+    print data.shape, 'will be divided into ',divide,' sections. ',1./divide,' for each sectins   *total: -0.5~ +0.5)'
     print 'A warning    \'RuntimeWarning: Mean of empty slice\'    can appear if there is no data in specific section. \n but that\'s OK'
     distri=numpy.zeros((data.shape[1],2*(divide+1))) #컬럼수,쪼갬수(평균,개수 2개씩이라 *2, 총평균/개수 포함이라 +1)
 
@@ -293,9 +293,19 @@ def chkDistri(data, divide=10): #기본 값구간 10개로 나눔.  [총평균,�
                 item_prev=0
                 for i, item in enumerate(index_array): #인덱스번호를 index_array 로 한방에 만드는바람에 위치지정이 꼬였음. 
                     #print i,item, div_step
-                    distri[n_col,2*(i+1)]= numpy.average(data_col[item_prev:item]) #구간별 평균을 삽입
+                    
+                    #개수는 0으로 표현되지만 평균은 개수가 0일때 nan 표기됨. 이건 nonetype 이 되어 모든 데이터를 nonetype 만들고, 나중에 pickle 화나 excel 변환시 타입오류 만듬.
+                    temp = numpy.average(data_col[item_prev:item])#구간별 평균을 삽입
+                    if not (temp==temp) : #nan 은 서로 == 연산해도 false 인걸 이용해서. 
+                        distri[n_col,2*(i+1)]= 0.
+                    else : 
+                        distri[n_col,2*(i+1)]= temp
+
                     distri[n_col,2*(i+1)+1]= item - item_prev #구간별 개수를 삽입
                     item_prev = item #현재값 저장
+    #print distri[1] #잘나왔나 한줄 집어서 확인
+    return distri
+
 
 try:
 #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
