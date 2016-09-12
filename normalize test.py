@@ -16,7 +16,11 @@ print(f)
 def normalize(array): #-0.5~+0.5
     array=numpy.array(array,dtype='float32')
     for col_num in range(0,array.shape[1]):
+        #int test
+        print 'int test : ',(array[:,col_num]-array[:,col_num].min(0))/array[:,col_num].ptp(0)-0.5
         array[:,col_num]=(array[:,col_num]-array[:,col_num].min(0))/array[:,col_num].ptp(0)-0.5
+
+
     return array
 
 print(normalize(f))
