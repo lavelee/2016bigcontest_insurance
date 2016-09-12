@@ -1,30 +1,14 @@
-
 # coding: utf-8
-
-#         'test_cucntt_label' : test_cucntt_label,
-#         'test_cucntt_data' : test_cucntt_data,
-#         'train_cucntt_label' : train_cucntt_label,
-#         'train_cucntt_data' : train_cucntt_data,
-#         'test_cuclaim_label' : test_cuclaim_label,
-#         'test_cuclaim_data' : test_cuclaim_data,
-#         'train_cuclaim_label' : train_cuclaim_label,
-#         'train_cuclaim_data' : train_cuclaim_data
-
-# In[1]:
-
-# These are all the modules we'll be using later. Make sure you can import them
-# before proceeding further.
 from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 from six.moves import cPickle as pickle
 
+pickle_file = '/home/rbl/Documents/TensorFlow/insurance/pickle_files/cucntt_cuclaim_null_randomfix.pickle'
 
-# First reload the data we generated in _notmist.ipynb_.
+#pickle_file = '/pickle_files/cucntt_cuclaim_null_randomfix.pickle' # doesn't work
 
-# In[2]:
-
-pickle_file = 'cucntt_cuclaim_null_randomfix.pickle'
+#pickle_file = 'cucntt_cuclaim_null_randomfix.pickle' #same directory
 
 with open(pickle_file, 'rb') as f:
   save = pickle.load(f)
@@ -50,8 +34,6 @@ print('cuclaim Training set : ', train_cuclaim_label.shape, train_cuclaim_data.s
 
 
 # one hot encoding
-
-# In[3]:
 
 num_labels = 2
 
