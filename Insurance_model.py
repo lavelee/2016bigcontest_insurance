@@ -3,11 +3,18 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 from six.moves import cPickle as pickle
+import sys
 
-pickle_file = '/home/rbl/Documents/TensorFlow/insurance/pickle_files/cucntt_cuclaim_null_randomfix.pickle'
+pickle_file = sys.argv[1] #full picklefile path
+layer2_nodes =  int(sys.argv[2]) #100 or 1024
+learning_rate_init= float(sys.argv[3]) #0.5
 
+print (pickle_file)
+print (layer2_nodes)
+print (learning_rate_init)
+
+#pickle_file = '/home/rbl/Documents/TensorFlow/insurance/pickle_files/cucntt_cuclaim_null_randomfix.pickle'
 #pickle_file = '/pickle_files/cucntt_cuclaim_null_randomfix.pickle' # doesn't work
-
 #pickle_file = 'cucntt_cuclaim_null_randomfix.pickle' #same directory
 
 with open(pickle_file, 'rb') as f:
@@ -27,16 +34,14 @@ with open(pickle_file, 'rb') as f:
   
 
 del save  # hint to help gc free up memory
-print('cucntt Test set : ', test_cucntt_label.shape, test_cucntt_data.shape)
-print('cucntt Training set : ', train_cucntt_label.shape, train_cucntt_data.shape)
-print('cuclaim Test set : ', test_cuclaim_label.shape, test_cuclaim_data.shape)
-print('cuclaim Training set : ', train_cuclaim_label.shape, train_cuclaim_data.shape)
+#print('cucntt Test set : ', test_cucntt_label.shape, test_cucntt_data.shape)
+#print('cucntt Training set : ', train_cucntt_label.shape, train_cucntt_data.shape)
+#print('cuclaim Test set : ', test_cuclaim_label.shape, test_cuclaim_data.shape)
+#print('cuclaim Training set : ', train_cuclaim_label.shape, train_cuclaim_data.shape)
 
 
 # one hot encoding
-
 num_labels = 2
-
 def reformat(labels):
   one_hot_encode = (np.arange(num_labels) == labels[:,None]).astype(np.float32)
   return one_hot_encode 
@@ -46,10 +51,10 @@ train_cucntt_label=reformat(train_cucntt_label)
 test_cuclaim_label=reformat(test_cuclaim_label)
 train_cuclaim_label=reformat(train_cuclaim_label)
 
-print('cucntt Test set : ', test_cucntt_label.shape, test_cucntt_data.shape)
-print('cucntt Training set : ', train_cucntt_label.shape, train_cucntt_data.shape)
-print('cuclaim Test set : ', test_cuclaim_label.shape, test_cuclaim_data.shape)
-print('cuclaim Training set : ', train_cuclaim_label.shape, train_cuclaim_data.shape)
+#print('cucntt Test set : ', test_cucntt_label.shape, test_cucntt_data.shape)
+#print('cucntt Training set : ', train_cucntt_label.shape, train_cucntt_data.shape)
+#print('cuclaim Test set : ', test_cuclaim_label.shape, test_cuclaim_data.shape)
+#print('cuclaim Training set : ', train_cuclaim_label.shape, train_cuclaim_data.shape)
 
 
 # In[4]:
@@ -67,15 +72,15 @@ def f1Score(predictions, labels):
     #print(predictions)
     #print(labels)
     #print(predict)
-    print("sin predict",predict[1])
-    print("sin correct predict : ",correct_predict[1])
-    print("sin real : ",real[1])
+    print("sin predict :",predict[1])
+    print("sin correct predict :",correct_predict[1])
+    print("sin real :",real[1])
     #print("\nnot_sin pricision : ",correct_predict[0]/predict[0])
     #print("not_sin   recall  : ",correct_predict[0]/real[0])
     #print("not_sin F1 score  : ",2*correct_predict[0]/predict[0]*correct_predict[0]/real[0]/(correct_predict[0]/predict[0]+correct_predict[0]/real[0]))
-    print("sin pricision : ",correct_predict[1]/predict[1])
-    print("sin   recall  : ",correct_predict[1]/real[1])
-    print("sin F1 score  : ",f1_score)
+    #print("sin pricision : ",correct_predict[1]/predict[1])
+    #print("sin   recall :",correct_predict[1]/real[1])
+    print("sin F1 score :",f1_score)
 
 select = "cuclaim"#select cucntt or cuclaim
 if select=="cucntt":
@@ -90,7 +95,7 @@ elif select=="cuclaim":
     test_labels = test_cuclaim_label
 else : 
     raise error
-print (select,' selected')
+#print (select,' selected')
 
 
 # In[5]:
@@ -99,9 +104,9 @@ print (select,' selected')
 batch_size = 100
 beta = 0
 w_init_deviation = 0.5
-learning_rate_init=0.5
+#learning_rate_init=0.5
 l_rate_final_ratio=1
-layer2_nodes = 100
+#layer2_nodes = 100
 keep_ratio=1
 
 
@@ -147,7 +152,7 @@ with graph.as_default():
 
 with tf.Session(graph=graph) as session:
   tf.initialize_all_variables().run()
-  print("Initialized")
+  #print("Initialized")
   for step in range(step_size):
     offset = (step * batch_size) % (train_labels.shape[0] - batch_size)
     batch_data = train_dataset[offset:(offset + batch_size), :]
@@ -156,11 +161,11 @@ with tf.Session(graph=graph) as session:
     global_step=step
     _,l, predictions = session.run(
       [optimizer,loss, train_prediction], feed_dict=feed_dict)
-    if (step % (int(step_size*0.2)) == 0):
-      print("Minibatch loss at step %d: %f" % (step, l))
-      print("Minibatch accuracy: %.1f%%" % accuracy(predictions, batch_labels))
+    #if (step % (int(step_size*0.2)) == 0):
+      #print("Minibatch loss at step %d: %f" % (step, l))
+      #print("Minibatch accuracy: %.1f%%" % accuracy(predictions, batch_labels))
   #print("Test accuracy: %.1f%%" % accuracy(test_prediction.eval(), test_labels))
-  print("\nby ",select)
+  #print("\nby ",select)
   f1Score(test_prediction.eval(), test_labels)
   saver.save(session,'trained_w12b12_'+select,write_meta_graph=False)
   w1 = session.run(L1_weights)
@@ -187,15 +192,14 @@ f.close()
 print("\npicklize finished")
 with open(pickle_name,'r') as f:
     trainwb=pickle.load(f)
-    print(pickle_name)
-    for k,v in trainwb.items():
-        print(k,v.shape)
+    #print(pickle_name)
+    #for k,v in trainwb.items():
+        #print(k,v.shape)
 
 
 
 
 # In[7]:
-
 
 import openpyxl
 import numpy
@@ -223,10 +227,10 @@ def sheetmake(data):
                 #input_value=dictdata[n_row,n_col]                           #str 오류날때 asscalar 빼면 될때있음
                 sheet.cell(row=n_row+1,column=n_col+1).value=input_value    #엑셀에선 행,열 첫번호가 1 
             #sheet.column_dimensions[openpyxl.cell.get_column_letter(n_col+1)].width = 2.76 #컬럼 넓이 조절. 필요 없으면 빼기
-        print('making sheet : ',dictitle)
+        #print('making sheet : ',dictitle)
     sheet = book.get_sheet_by_name('Sheet') #select sheet named Sheet
     book.remove_sheet(sheet) #delete that sheet
-    print('saving data to excel...')
+    #print('saving data to excel...')
     book.save(excel_name)
     print ('finished, file saved : ',excel_name)
 
@@ -234,11 +238,6 @@ def sheetmake(data):
 
 if os.path.isfile(excel_name): #이미 파일이 있으면 삭제함 #엑셀파일이 열려있으면 삭제도 못하고 오류남. 
 	os.remove(excel_name)
-	print('target excel file exists. continue after deleting')
+	#print('target excel file exists. continue after deleting')
 sheetmake(pickleread(pickle_name))
-
-
-# In[ ]:
-
-
 
