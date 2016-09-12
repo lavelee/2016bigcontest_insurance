@@ -16,8 +16,11 @@ cur.execute('SET NAMES utf8;')
 cur.execute('SET CHARACTER SET utf8;')
 cur.execute('SET character_set_connection=utf8;')
 
-ifdummy=0
+ifdummy=1
+afterdummy_variables_limit=0.01 #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
+                                            #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
 pickle_name='cucntt_cuclaim_null_randomfix.pickle' #만들어진 피클 이름. picklize 에서 쓴다. 
+
 
 #query . 끝에 Y/N 은 제외했다 나중에 붙임.
 sql_cucntt="""Select
@@ -322,8 +325,6 @@ try:
     cucntt =numpy.concatenate((cucntt_y,cucntt_n),0)#더미화 위해 잠시 테이블 합침
     cuclaim=numpy.concatenate((cuclaim_y,cuclaim_n),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
     #아래는 자동으로 카테고리 컬럼이 뭔지 생성. 
-    afterdummy_variables_limit=100  #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
-                                                #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
     cucntt_cat_tf_index=autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,afterdummy_variables_limit)) #자동변수 . 아니면 수동으로
     cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit))
     cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt,ifdummy) #더미화 실행, 안하려면 이 줄 삭제가 아니라 옵션에 ,0 넣기
@@ -358,6 +359,8 @@ try:
     #print'test_cuclaim_label , train_cuclaim_label shape : ',test_cuclaim_label.shape,train_cuclaim_label.shape
 
 #train set distribution analysis [전체평균,전체개수,구간1평균, 구간1개수, 구간2평균, 구간2개수 ... ]
+    train_cucntt_distri=0 #off 시에도 동작하게 하려고 일단 변수는 생성.
+    train_cucntt_distri=0
     train_cucntt_distri = chkDistri(train_cucntt_data)
     train_cuclaim_distri = chkDistri(train_cuclaim_data)
 
