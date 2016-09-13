@@ -9,18 +9,17 @@ import os
 #trained_w12b12_cuclaim.pickle
 
 #pickle_name = 'trained_w12b12_cuclaim.pickle'
-pickle_name = 'adv_skima.pickle'
+pickle_name = 'insurance_nullfix_adv_skima.pickle'
 
 #엑셀이름
-excel_name=pickle_name[:pickle_name.find(".pickle")]+'.xlsx'
+
 
 def pickleread(pickle_name):
     with open(pickle_name,'rb') as f:
         data=pickle.load(f)
         return data
 
-def sheetmake(data):
-    global pickle_name,excel_name
+def sheetmake(data,excel_name):
     book = openpyxl.Workbook()
     for dictitle , dictdata in data.items():
         dictdata=numpy.matrix(dictdata) #1차원 배열 있으면 shape 차원 하나라 오류나서.
@@ -39,10 +38,11 @@ def sheetmake(data):
     print 'finished, file saved : ',excel_name
 
 
+excel_name=pickle_name[:pickle_name.find(".pickle")]+'.xlsx'
 
 if os.path.isfile(excel_name): #이미 파일이 있으면 삭제함 #엑셀파일이 열려있으면 삭제도 못하고 오류남. 
 	os.remove(excel_name)
 	print('target excel file exists. continue after deleting')
-sheetmake(pickleread(pickle_name))
+sheetmake(pickleread(pickle_name),excel_name)
 
 
