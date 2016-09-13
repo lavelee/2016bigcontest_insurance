@@ -10,7 +10,7 @@ pickle_file = sys.argv[1] #full picklefile path
 layer2_nodes =  int(sys.argv[2]) #100 or 1024
 learning_rate_init= float(sys.argv[3]) #0.5
 tryno = int(sys.argv[4])
-select = 'cuclaim'#select cucntt or cuclaim
+select = sys.argv[5] #select cucntt or cuclaim
 
 path = pickle_file[:pickle_file.rfind('/')+1]
 filename = pickle_file[pickle_file.rfind('/')+1:pickle_file.rfind('.pickle')]

@@ -20,9 +20,13 @@ folder = '/home/rbl/Documents/TensorFlow/insurance/pickle_files_test/' #디버�
 #변인수를 변수로 두는것은 총 개수를 동적으로 계산해 몇개중 몇번째것이 진행중인지 표시하기 위해서임.
 n_node_var=2 # 노드 변인수. 변인을 이 값에 연동시켰으므로 변인수 바뀌면 다시 만들어야 함. 
 n_Lrate_var=1 # 러닝레이트 변인수
-n_test_per_var=4 # 한 조건세트당 몇번씩 수행
+n_test_per_var=5 # 한 조건세트당 몇번씩 수행
+select = 'cuclaim' #cuclaim, cucntt 중에 고를수 있게
+
+
+
 n_total_test = len(os.listdir(folder))*n_node_var*n_Lrate_var*n_test_per_var #총 횟수
-test_result = [['picklename','nodes','L rate','predict','correct predict','real','F1 score']] #최종출력 첫행에 컬럼명 넣기 
+test_result = [['picklename','select','nodes','L rate','predict','correct predict','real','F1 score']] #최종출력 첫행에 컬럼명 넣기 
 
 
 def pcrfCollector(book):
@@ -77,12 +81,13 @@ for h, filename in enumerate(os.listdir(folder)):
         for j in range(0,n_Lrate_var): #현재 learning_rate 는 0.5로 고정이니 1개라서 range(0,1) 
             learning_rate_init = 0.5
             for k in range(0,n_test_per_var): #같은 피클과 조건에 대해 몇번 반복할것인가 
-                syscommand = 'python /home/rbl/Documents/TensorFlow/insurance/Insurance_model.py "'+pickle_file+'" '+str(layer2_nodes)+' '+str(learning_rate_init)+' '+str(k+1)
+                syscommand = 'python /home/rbl/Documents/TensorFlow/insurance/Insurance_model.py "'+pickle_file+'" '+str(layer2_nodes)+' '+str(learning_rate_init)+' '+str(k+1)+' '+select
                 #print '\n',syscommand
                 get=subprocess.check_output(syscommand, shell=True)
                 output = pcrfCollector(get)
                 output.insert(0,learning_rate_init) #리턴값이 insert된 배열이 아니라.. 이거 실행만으로 insert 되는 함수임. 
                 output.insert(0,layer2_nodes)
+                output.insert(0,select)
                 output.insert(0,filename) #마지막에 0에 넣는게 가장 앞으로 오니까. 
                 #print(h,i,j,k)
                 print where(h,i,j,k), '/' ,n_total_test, output #현재 위치와 최대값 표시
@@ -104,7 +109,7 @@ f.close()
 
 
 #엑셀파일 저장
-excel_name=folder+pickle_name[:pickle_name.find(".pickle")]+'.xlsx' #folder 붙여서 폴더안에 저장하게
+excel_name=folder+pickle_name[:pickle_name.find(".pickle")]+'.xlsx' #folder 붙여서 피클파일있던 폴더안에 저장하게
 if os.path.isfile(excel_name): #이미 파일이 있으면 삭제함 #엑셀파일이 열려있으면 삭제도 못하고 오류남. 
     os.remove(excel_name)
     print('target excel file exists. continue after deleting')
