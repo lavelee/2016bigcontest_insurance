@@ -38,7 +38,7 @@ def sheetmake(data,excel_name):
     print 'finished, file saved : ',excel_name
 
 
-excel_name=pickle_name[:pickle_name.find(".pickle")]+'.xlsx'
+excel_name=pickle_name[:pickle_name.rfind(".pickle")]+'.xlsx' #rfind 해야 경로명에 pickle 말고 확장자 pickle 만 찾아냄
 
 if os.path.isfile(excel_name): #이미 파일이 있으면 삭제함 #엑셀파일이 열려있으면 삭제도 못하고 오류남. 
 	os.remove(excel_name)
