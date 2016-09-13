@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 import subprocess
 import os
+import pickle
+import time
+import openpyxl
+import numpy
+
+t1=time.localtime()
+print 'start at', time.strftime('%y%m%d %Hh%Mm',t1)
 
 #pickle_file = sys.argv[1] #full picklefile path
 #layer2_nodes =  sys.argv[2] #100 or 1024
@@ -15,6 +22,7 @@ n_node_var=2 # 노드 변인수. 변인을 이 값에 연동시켰으므로 변�
 n_Lrate_var=1 # 러닝레이트 변인수
 n_test_per_var=4 # 한 조건세트당 몇번씩 수행
 n_total_test = len(os.listdir(folder))*n_node_var*n_Lrate_var*n_test_per_var #총 횟수
+test_result = [['picklename','nodes','L rate','predict','correct predict','real','F1 score']] #최종출력 첫행에 컬럼명 넣기 
 
 
 def pcrfCollector(book):
@@ -28,7 +36,6 @@ def pcrfCollector(book):
     #print result
     return result
 
-
 def where(h,i,j,k,imax=n_node_var,jmax=n_Lrate_var,kmax=n_test_per_var): 
 #현재위치 셈. hmax는 필요가 없다
     position = (h*n_node_var*n_Lrate_var*n_test_per_var +
@@ -38,9 +45,31 @@ def where(h,i,j,k,imax=n_node_var,jmax=n_Lrate_var,kmax=n_test_per_var):
     return position
 
 
-test_result = [] #최종출력할 결과 
+def pickleread(pickle_name):
+    with open(pickle_name,'rb') as f:
+        data=pickle.load(f)
+        return data
+
+def sheetmake(data,excel_name):
+    book = openpyxl.Workbook()
+    for dictitle , dictdata in data.items():
+        dictdata=numpy.matrix(dictdata) #1차원 배열 있으면 shape 차원 하나라 오류나서.
+        sheet=book.create_sheet(title=dictitle)
+        for n_col in range(0,dictdata.shape[1]):
+            for n_row in range(0,dictdata.shape[0]):
+                #input_value=numpy.asscalar(dictdata[n_row,n_col])          #python native 로 바꿔주는 코드. 이것과 아래줄 둘중하나 필수. 
+                input_value=dictdata[n_row,n_col]                           #str 오류날때 asscalar 빼면 될때있음
+                sheet.cell(row=n_row+1,column=n_col+1).value=input_value    #엑셀에선 행,열 첫번호가 1 
+            #sheet.column_dimensions[openpyxl.cell.get_column_letter(n_col+1)].width = 2.76 #컬럼 넓이 조절. 필요 없으면 빼기
+        print 'making sheet : ',dictitle
+    sheet = book.get_sheet_by_name('Sheet') #select sheet named Sheet
+    book.remove_sheet(sheet) #delete that sheet
+    print 'saving data to excel...'
+    book.save(excel_name)
+    print 'finished, file saved : ',excel_name
 
 
+#시작
 for h, filename in enumerate(os.listdir(folder)):
     pickle_file = os.path.join(folder,filename)
     for i in range(0,n_node_var):
@@ -48,7 +77,7 @@ for h, filename in enumerate(os.listdir(folder)):
         for j in range(0,n_Lrate_var): #현재 learning_rate 는 0.5로 고정이니 1개라서 range(0,1) 
             learning_rate_init = 0.5
             for k in range(0,n_test_per_var): #같은 피클과 조건에 대해 몇번 반복할것인가 
-                syscommand = 'python /home/rbl/Documents/TensorFlow/insurance/Insurance_model.py "'+pickle_file+'" '+str(layer2_nodes)+' '+str(learning_rate_init)
+                syscommand = 'python /home/rbl/Documents/TensorFlow/insurance/Insurance_model.py "'+pickle_file+'" '+str(layer2_nodes)+' '+str(learning_rate_init)+' '+str(k+1)
                 #print '\n',syscommand
                 get=subprocess.check_output(syscommand, shell=True)
                 output = pcrfCollector(get)
@@ -59,8 +88,31 @@ for h, filename in enumerate(os.listdir(folder)):
                 print where(h,i,j,k), '/' ,n_total_test, output #현재 위치와 최대값 표시
                 test_result.append(output) #이것도 재할당 안해도 자동 적용되는거. 
 #output [피클명 , nodes , learningrate, predict, correct predict, real, f1score]
+#print '\n', test_result    #최종 출력배열 확인
 
 
-print '\n', test_result    #최종 출력배열 확인
+
+#피클화. 날짜 시간 folderprocess.pickle 로 저장
+pickle_name = time.strftime('%y%m%d %Hh%Mm',t1) + ' FolderResult.pickle'
+f = open(pickle_name,'w')
+save={
+    'result' : test_result        
+        }
+pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
+f.close()
+#print '\npicklize finished.  filename :',pickle_name
+
+
+#엑셀파일 저장
+excel_name=folder+pickle_name[:pickle_name.find(".pickle")]+'.xlsx' #folder 붙여서 폴더안에 저장하게
+if os.path.isfile(excel_name): #이미 파일이 있으면 삭제함 #엑셀파일이 열려있으면 삭제도 못하고 오류남. 
+    os.remove(excel_name)
+    print('target excel file exists. continue after deleting')
+sheetmake(pickleread(pickle_name),excel_name) #피클읽어 그대로 sheet 로 출력. 
+os.remove(pickle_name)#피클 제거
+
+
+t2=time.localtime() #끝난 시간
+print 'ends at',  time.strftime('%y%m%d %Hh%Mm',t2)
 
 

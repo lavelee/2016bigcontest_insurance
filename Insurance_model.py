@@ -4,10 +4,17 @@ import numpy as np
 import tensorflow as tf
 from six.moves import cPickle as pickle
 import sys
+import openpyxl
 
 pickle_file = sys.argv[1] #full picklefile path
 layer2_nodes =  int(sys.argv[2]) #100 or 1024
 learning_rate_init= float(sys.argv[3]) #0.5
+tryno = int(sys.argv[4])
+select = 'cuclaim'#select cucntt or cuclaim
+
+path = pickle_file[:pickle_file.rfind('/')+1]
+filename = pickle_file[pickle_file.rfind('/')+1:pickle_file.rfind('.pickle')]
+resultname = path+'train) '+filename+' node'+str(layer2_nodes)+' LR'+str(learning_rate_init)+' try'+str(tryno)+' '+select #폴더경로에 파일저장. 
 
 print (pickle_file)
 print (layer2_nodes)
@@ -82,7 +89,7 @@ def f1Score(predictions, labels):
     #print("sin   recall :",correct_predict[1]/real[1])
     print("sin F1 score :",f1_score)
 
-select = "cuclaim"#select cucntt or cuclaim
+
 if select=="cucntt":
     train_dataset = train_cucntt_data
     train_labels = train_cucntt_label
@@ -167,14 +174,14 @@ with tf.Session(graph=graph) as session:
   #print("Test accuracy: %.1f%%" % accuracy(test_prediction.eval(), test_labels))
   #print("\nby ",select)
   f1Score(test_prediction.eval(), test_labels)
-  saver.save(session,'trained_w12b12_'+select,write_meta_graph=False)
+  saver.save(session,resultname,write_meta_graph=False)
   w1 = session.run(L1_weights)
   b1 = session.run(L1_biases)
   w2 = session.run(L2_weights)
   b2 = session.run(L2_biases)
 
 
-pickle_name='trained_w12b12_'+select+'.pickle'
+pickle_name=resultname+'.pickle'
 f=open(pickle_name,'w')
 save ={'w1' : w1,
        'b1' : b1,
@@ -197,33 +204,19 @@ with open(pickle_name,'r') as f:
         #print(k,v.shape)
 
 
-
-
-# In[7]:
-
-import openpyxl
-import numpy
-import os
-
-pickle_name = 'trained_w12b12_cuclaim.pickle'
-
-#엑셀이름
-excel_name=pickle_name[:pickle_name.find(".pickle")]+'.xlsx'
-
 def pickleread(pickle_name):
     with open(pickle_name,'rb') as f:
         data=pickle.load(f)
         return data
 
-def sheetmake(data):
-    global pickle_name,excel_name
+def sheetmake(data,excel_name):
     book = openpyxl.Workbook()
     for dictitle , dictdata in data.items():
-        dictdata=numpy.matrix(dictdata) #1차원 배열 있으면 shape 차원 하나라 오류나서.
+        dictdata=np.matrix(dictdata) #1차원 배열 있으면 shape 차원 하나라 오류나서.
         sheet=book.create_sheet(title=dictitle)
         for n_col in range(0,dictdata.shape[1]):
             for n_row in range(0,dictdata.shape[0]):
-                input_value=numpy.asscalar(dictdata[n_row,n_col])          #python native 로 바꿔주는 코드. 이것과 아래줄 둘중하나 필수. 
+                input_value=np.asscalar(dictdata[n_row,n_col])          #python native 로 바꿔주는 코드. 이것과 아래줄 둘중하나 필수. 
                 #input_value=dictdata[n_row,n_col]                           #str 오류날때 asscalar 빼면 될때있음
                 sheet.cell(row=n_row+1,column=n_col+1).value=input_value    #엑셀에선 행,열 첫번호가 1 
             #sheet.column_dimensions[openpyxl.cell.get_column_letter(n_col+1)].width = 2.76 #컬럼 넓이 조절. 필요 없으면 빼기
@@ -235,9 +228,11 @@ def sheetmake(data):
     print ('finished, file saved : ',excel_name)
 
 
+#엑셀이름  :        train) 피클이름 노드수 러닝레이트 트레인횟수 
+# train) rand1 node100 LR0.5 try1 .xlsx
 
-if os.path.isfile(excel_name): #이미 파일이 있으면 삭제함 #엑셀파일이 열려있으면 삭제도 못하고 오류남. 
-	os.remove(excel_name)
-	#print('target excel file exists. continue after deleting')
-sheetmake(pickleread(pickle_name))
+excel_name=resultname+'.xlsx' 
+sheetmake(pickleread(pickle_name),excel_name)
 
+
+#한번 시행당 파일 3개가 만들어진다. 하나는 텐서플로 variable 방식 w,b저장 확장자없는것,  pickle로 w,b 저장, 엑셀로 w,b 출력한 3가지다. 
