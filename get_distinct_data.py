@@ -52,7 +52,7 @@ try:
             cur.execute(sql_check_date) #컬럼타입이 date 면 비교시에 비교불가라 뜨므로 숫자로 바꿔 가져오기 위해서 . 
             column_type=cur.fetchall()[0][1]
             print(column_type)
-            if fcolumn_type=='date' :
+            if column_type=='date' :
                 cur.execute(sql_type_date)
             else:
                 cur.execute(sql_type_notdate)
