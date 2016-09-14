@@ -3,8 +3,11 @@
 
 import MySQLdb, pickle, os
 
+dbname='insurance'
 #서버접속 설정과 한글사용위한 인코딩 설정
-mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix')
+
+
+mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db=dbname)
 cur=mydb.cursor()
 mydb.set_character_set('utf8')
 cur.execute('SET NAMES utf8;')
@@ -12,7 +15,7 @@ cur.execute('SET CHARACTER SET utf8;')
 cur.execute('SET character_set_connection=utf8;')
 
 #데이터베이스에서 모든 테이블명과 컬럼명을 받아와 테이블명 : 컬럼명 의 딕셔너리 데이터로 합침. 
-def getSkima(database_name='insurance'):
+def getSkima(database_name=dbname):
     db_skima = {}
     cur.execute('show tables')
     tables=[a[0] for a in cur.fetchall()]  #안하면 (('befo_job',), ('caus_1',), ('caus_2',), ('caus_3',)) 식으로 2개씩 뜸.
@@ -29,7 +32,7 @@ def getSkima(database_name='insurance'):
     return db_skima
 
 #테이블명 : 컬럼들 구조의 딕셔너리 데이터를 받아 컬럼마다 평균과 분산을 삽입 . 기본값 안주면 자동으로 insurance에서 만들어온다.  getskima 함수를 필요로 함.
-def getAdvSkima(database_name='insurance'):
+def getAdvSkima(database_name=dbname):
     db_skima=getSkima(database_name)
     for table in db_skima:
         columns=db_skima[table]
@@ -42,15 +45,15 @@ def getAdvSkima(database_name='insurance'):
             cur.execute('SHOW FIELDS FROM '+table+' where Field ="'+column+'"')
             column_type = cur.fetchall()[0][1]
             cur.execute('SELECT MAX('+column+') from '+table+' limit 1')
-            max=stddev = cur.fetchall()[0][0]
+            max= cur.fetchall()[0][0]
             cur.execute('SELECT MIN('+column+') from '+table+' limit 1')
-            min=stddev = cur.fetchall()[0][0]
+            min= cur.fetchall()[0][0]
             db_skima[table][i]=[column,avg,stddev,column_type,min,max] #순서는 외워 써야한다.
             i=i+1
         #print(db_skima[table])
     return db_skima
 
-#평균과 분산 삽입이 잘 되었나 확인하려고 만듬. db_skima 를 addFeature 로 adv_skima로 만들고 , advSkima[테이블명][컬럼명,평균,분산,최소,최대] 순으로 가져옴. 
+#평균과 분산 삽입이 잘 되었나 확인하려고 만듬. db_skima 를 addFeature 로 adv_skima로 만들고 , advSkima[테이블명][컬럼명,평균,표준편차,최소,최대] 순으로 가져옴. 
 def test_advSkima(test_tablename='claim'):
     test_skima=getAdvSkima()
     for column in test_skima[test_tablename]: #test table name
@@ -60,7 +63,7 @@ def test_advSkima(test_tablename='claim'):
         print'std dev           : ','text_data' if column[2]==0 else column[2]
         print'field type         : ',column[3],'\n'
 
-def pickler(pickle_filename='adv_skima.pickle'):
+def pickler(pickle_filename=dbname+'_adv_skima.pickle'):
     f = open(pickle_filename,'wb') #윈도우라서 b 붙음.
     pickle.dump(getAdvSkima(),f,pickle.HIGHEST_PROTOCOL)
     f.close()
@@ -70,6 +73,7 @@ def pickler(pickle_filename='adv_skima.pickle'):
 try:
     print(getAdvSkima()['cust']) #cust 테이블을 예시로 가져와봄.
     pickler() #이렇게 켜면 파일 제작
+    #test_advSkima()
 
 finally:
     cur.close()

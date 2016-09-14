@@ -55,7 +55,7 @@ filelist=allfiles("D:/CSV/")
 #테이블 의존성 (왜래키) 감안해서 폴더명 1,2,3 등으로 이름정렬 순서생각해 만들어 그안에 파일넣기. 
 #한글경로 있는 폴더에 넣었더니 utf-8 인데도 못읽어옴.
 
-with open('adv_skima.pickle','rb') as f:
+with open('insurance_adv_skima.pickle','rb') as f:
     adv_skima=pickle.load(f)
     #for i in range(0,100):
     #   print(adv_skima['cust'][i][0])
@@ -123,7 +123,7 @@ try:
             i=i+1
 
         #한개파일 끝날때마다 널 개수 출력    
-        print nullnum,' Nulls in ',table_name,' and now substituted with random data.' if nullnum!=0
+        print nullnum,' Nulls in ',table_name
     mydb.commit() #모든파일 끝날때 커밋하는 위치임
         #print("break") 
         #break #파일 하나만 넣도록 제한하는 테스트코드

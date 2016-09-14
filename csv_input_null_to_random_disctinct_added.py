@@ -6,6 +6,8 @@
 # 이 파일은 이미 MySQL에 존재하는 insurance DB를 읽어 평균/분산을 구해오므로, 대입할 CSV만 있을때는 동작하지 않는다. 
 # 평균/분산을 파일로 빼서 쓰게하면 좋겠지만 귀찮 귀찮..
 
+#필요한것 : nullfix 안된 오리지널의 adv_skima, d:\에 원본 CSV 파일, 유니크를 미리계산한 distinct_data, DB는 CSV 가 포함된 nullfix 이전 원본, 그리고 fix된 내용을 받을 빈 insurance_nullfix (스키마만 적용) . 
+
 import MySQLdb
 import unicodecsv
 import os
@@ -58,7 +60,7 @@ filelist=allfiles("D:/CSV/")
 #테이블 의존성 (왜래키) 감안해서 폴더명 1,2,3 등으로 이름정렬 순서생각해 만들어 그안에 파일넣기. 
 #한글경로 있는 폴더에 넣었더니 utf-8 인데도 못읽어옴.
 
-with open('adv_skima.pickle','rb') as f:
+with open('insurance_adv_skima.pickle','rb') as f:
     adv_skima=pickle.load(f)
     #for i in range(0,100):
     #   print(adv_skima['cust'][i][0])
@@ -71,8 +73,8 @@ def randNull(table,column):
     #print'column number = ',column,'    adv_skima[table][column][0] = ',adv_skima[table][column][0]
     col_avg=adv_skima[table][column][1]
     col_std=adv_skima[table][column][2]
-    #print(col_avg)
-    #print(col_std)
+    print(col_avg)
+    print(col_std)
     rand_data=np.random.normal(col_avg,col_std,1)[0]
     #print(rand_data) 랜덤으로 만든 값
     if adv_skima[table][column][3]=='date': #넣으려는 컬럼이 date타입인데 내가 second 형태로 값을 가질경우 바꿔서 넣어줘야 한다. 
