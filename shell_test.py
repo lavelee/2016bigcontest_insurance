@@ -15,11 +15,12 @@ print 'start at', time.strftime('%y%m%d %Hh%Mm',t1)
 
 #이 shell은 타겟파일에서 순서대로 피클네임, 노드수, 학습율 을 변수로 받고 결과를 pcrf 순으로 내보내는데 맞춰서 작성되었다. 
 
-#folder = '/home/rbl/Documents/TensorFlow/insurance/pickle_files/' #실제 실행용
-folder = '/home/rbl/Documents/TensorFlow/insurance/pickle_files_test/' #디버깅용으로 파일 2개만 넣어서 돌려봄
+folder = '/notebooks/insurance/pickle_files/' #실제 실행용 pickle folder
+subpy = '/notebooks/insurance/Insurance_model.py' #쉘로 실행할 py 파일의 위치
+#folder = '/home/rbl/Documents/TensorFlow/insurance/pickle_files_test/' #디버깅용으로 파일 2개만 넣어서 돌려봄
 #변인수를 변수로 두는것은 총 개수를 동적으로 계산해 몇개중 몇번째것이 진행중인지 표시하기 위해서임.
-n_node_var=2 # 노드 변인수. 변인을 이 값에 연동시켰으므로 변인수 바뀌면 다시 만들어야 함. 
-n_Lrate_var=1 # 러닝레이트 변인수
+n_node_var=4 # 노드 변인수. 변인을 이 값에 연동시켰으므로 변인수 바뀌면 다시 만들어야 함. 0부터 세지 않음.
+n_Lrate_var=2 # 러닝레이트 변인수
 n_test_per_var=5 # 한 조건세트당 몇번씩 수행
 select = 'cuclaim' #cuclaim, cucntt 중에 고를수 있게
 
@@ -77,11 +78,21 @@ def sheetmake(data,excel_name):
 for h, filename in enumerate(os.listdir(folder)):
     pickle_file = os.path.join(folder,filename)
     for i in range(0,n_node_var):
-        layer2_nodes = i*900+100
+        if i==0:
+            layer2_nodes = 10
+        elif i==1:
+            layer2_nodes = 50
+        elif i==2:
+            layer2_nodes = 100
+        elif i==3:
+            layer2_nodes = 1024
         for j in range(0,n_Lrate_var): #현재 learning_rate 는 0.5로 고정이니 1개라서 range(0,1) 
-            learning_rate_init = 0.5
+            if j==0:
+                learning_rate_init = 0.3
+            if j==1:
+                learning_rate_init = 0.1
             for k in range(0,n_test_per_var): #같은 피클과 조건에 대해 몇번 반복할것인가 
-                syscommand = 'python /home/rbl/Documents/TensorFlow/insurance/Insurance_model.py "'+pickle_file+'" '+str(layer2_nodes)+' '+str(learning_rate_init)+' '+str(k+1)+' '+select
+                syscommand = 'python '+subpy+' "'+pickle_file+'" '+str(layer2_nodes)+' '+str(learning_rate_init)+' '+str(k+1)+' '+select
                 #print '\n',syscommand
                 get=subprocess.check_output(syscommand, shell=True)
                 output = pcrfCollector(get)
@@ -118,6 +129,7 @@ os.remove(pickle_name)#피클 제거
 
 
 t2=time.localtime() #끝난 시간
+print 'start at', time.strftime('%y%m%d %Hh%Mm',t1)
 print 'ends at',  time.strftime('%y%m%d %Hh%Mm',t2)
 
 
