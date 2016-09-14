@@ -1,4 +1,6 @@
 # coding: utf-8
+#리눅스에서 쉘파일로 실행되는 머신러닝 코드. 윈도우에서는 실행되지 않는다. 자체파일로만은 받아야할 변수가 없어 실행 안된다. 
+
 from __future__ import print_function
 import numpy as np
 import tensorflow as tf

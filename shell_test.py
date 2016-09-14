@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+
+#리눅스에서 딥러닝 모듈을 돌리기 위한 쉘파일
 import subprocess
 import os
 import pickle
