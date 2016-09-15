@@ -8,12 +8,13 @@ import os
 import pickle
 import MySQLdb
 import time
-t1=time.localtime()
+t1=time.localtime() #시작시간
 print 'started at', time.strftime('%y%m%d %Hh%Mm',t1)
 
-dbname='test' #생성되고 삭제될 db 이름. 
-sql_folder = 'D:/test_sql/' #nullfix DB 를 만들어주는 sql 폴더. 경로구분자를 \ 에서 / 로 변경했다. 경로에 한글이 있으면 안된다 . 마지막에 / 를 추가해줘야한다. 
-
+#설정변수들 
+dbname='insurance_nullfix'                                                           #생성되고 삭제될 db 이름. 
+sql_folder = 'D:/sql_to_pickle_forshell/db_sql/'               #nullfix DB 를 만들어주는 sql 폴더. 경로구분자를 \ 에서 / 로 변경했다. 경로에 한글이 있으면 안된다 . 마지막에 / 를 추가해줘야한다. 
+subpy = 'D:/sql_to_pickle_forshell/shell_picklemake1.py'    #실행할 py 파일. 한글경로 들어가면 안됨
 
 
 
@@ -31,30 +32,23 @@ cur.execute('SET CHARACTER SET utf8;')
 cur.execute('SET character_set_connection=utf8;')
 
 def sql_execute(file_wpath):
-    #DB제거
-    cur.execute('drop database '+dbname)
-    #print 'db '+dbname+' dropped' #제거상황 표시
-
-    #SQL 들을 차례로 실행해 DB 를 넣는다.
-    with open(file_wpath) as f: # 자동닫기
-        lines = ' '.join(f.readlines()).split(';') #한줄씩 분리해서 실행하지 않으면 다음 sql 에서 오류가 난다
-    for line in lines : #아래 주석문 판정은 heidiSQL 에서 만든 sql 내보내기 기준임. 
-        if line.find('*/')-line.find('/*')+2 == len(line) : #한 줄 전체가 주석인 경우 패스
-            #print 'passing line : ',line
-            pass
-        elif line=='\n': #마지막 빈칸줄이면 패스
-            #print 'last line'
-            pass
-        else: #아닐때만 실행한다. 
-            #print 'executing line : ',line
-            cur.execute(line)
+    command='"C:/Program Files/MariaDB 10.1/bin/mysql.exe" -uroot -ptjdgus123 < "'+file_wpath+'"'
+    print command
+    subprocess.check_output(command,shell=True)
 
 
-try:
+try: 
     for i, file_wpath in enumerate(files_wpath):
         sql_execute(file_wpath) #파일1개 실행
         #print 'file# :', i              #현재 몇번째 파일인지 . 0부터 시작함
         print file_wpath+' executed' # 파일이름 실행되었습니다
+
+        #i번째 sql 이 들어간 상태에서 subpy 실행
+
+        #syscommand = 'python '+subpy+' "'+pickle_file+'" '+str(layer2_nodes)+' '+str(learning_rate_init)+' '+str(k+1)+' '+select
+        #print '\n',syscommand
+        #get=subprocess.check_output(syscommand, shell=True) #subpy 실행결과를 py파일로 얻기
+
 
 
 finally:
