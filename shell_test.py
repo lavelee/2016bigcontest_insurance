@@ -29,7 +29,7 @@ select = 'cuclaim' #cuclaim, cucntt 중에 고를수 있게
 
 
 n_total_test = len(os.listdir(folder))*n_node_var*n_Lrate_var*n_test_per_var #총 횟수
-test_result = [['picklename','select','nodes','L rate','predict','correct predict','real','F1 score']] #최종출력 첫행에 컬럼명 넣기 
+test_result = [['picklename','select','nodes','L rate','test repeat','predict','correct predict','real','F1 score']] #최종출력 첫행에 컬럼명 넣기 
 
 
 def pcrfCollector(book):
@@ -98,6 +98,7 @@ for h, filename in enumerate(os.listdir(folder)):
                 #print '\n',syscommand
                 get=subprocess.check_output(syscommand, shell=True)
                 output = pcrfCollector(get)
+                output.insert(0,k)#한 조건의 몇번째 try 인지
                 output.insert(0,learning_rate_init) #리턴값이 insert된 배열이 아니라.. 이거 실행만으로 insert 되는 함수임. 
                 output.insert(0,layer2_nodes)
                 output.insert(0,select)
