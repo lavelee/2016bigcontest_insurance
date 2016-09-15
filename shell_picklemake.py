@@ -19,8 +19,8 @@ sql_folder = 'c:/sql_to_pickle_forshell/db_sql/'               #nullfix DB 를 �
 subpy = 'c:/sql_to_pickle_forshell/insurance_pickle_forshell.py'    #실행할 py 파일. 한글경로 들어가면 안됨
 #변화시킬 변수지정 
 outdel=[0,1]
-dummy=[0,100,1000] #원래 함수는 %로도 되어서 0.01 를 받았는데, subpy를 수정해서 int 로 변환하게 해놨으므로 정수만 넣자. 
-n_pickle=4
+dummy=[0,100] #원래 함수는 %로도 되어서 0.01 를 받았는데, subpy를 수정해서 int 로 변환하게 해놨으므로 정수만 넣자. 
+n_pickle=2
 
 
 #폴더내 sql 파일들 리스트 얻기
@@ -61,6 +61,8 @@ try: # i:sql파일번호 ,j:outdel 0/1 , k : dummy  l: duplicated pickle no
         #i번째 sql 이 들어간 상태에서 subpy 실행. dummy 없이, 100, 1000, outdel 하고 없이, 100, 1000. 각각 4개씩 총 6*4=24개의 pickle 만듬.
         #filename : rand00 outdel0 dummy000 00.pickle
         for j,j_outdel in enumerate(outdel):
+            if j==1:
+                pass #outdel 쿼리 작성해야됨. 
             for k,k_dummy in enumerate(dummy):
                 for l in range(0,n_pickle):
                     sql_name = files_wpath[i][:files_wpath[i].find('.sql')] #sql 파일말고 딴거 넣지 않도록 조심.
