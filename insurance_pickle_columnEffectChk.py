@@ -27,7 +27,7 @@ db_feature = 'rand01' #손으로 적어준다. DB이름 구분하기 위함
 ifoutdel = 0 #0 또는 1
 afterdummy_variables_limit = 100 #0, 100, 1000
 #9/15 수정사항 : dummylize 0, 1 로 더미화 할꺼 체크하는게 아니라, dummy 리미트가 자기 고유컬럼수보다 적으면 작동안함. 0 넣으면 됨.
-tryno = '00' #같은피클 여러번 만들어서 검증해야한다. 각 피클 메이킹 프로세스 구분. 손으로 바꿔주면서 돌린다. 파일명 마지막에 들어감
+tryno = '02' #같은피클 여러번 만들어서 검증해야한다. 각 피클 메이킹 프로세스 구분. 손으로 바꿔주면서 돌린다. 파일명 마지막에 들어감
 
 #query . 끝에 Y/N 은 제외했다 나중에 붙임.
 #변수 구조상 cntt 를 뺄수는 없다. claim 변수가 메인이므로 cucntt 는 작게 줄여넣었다. dummylize도 0으로 고정시킴. 
@@ -45,7 +45,6 @@ sql_cucntt="""Select
 
 
 #쿼리를 그대로 쓰는게 아니고, select 안의 컬럼과 나머지를 분리한다.  dbname으로 위치를 탐지하도록 기본세팅했기 때문에 DB명까지 풀 경로로 적어줘야 한다. 
-#마지막이 매우 중요한데, 마지막 테이블명 이후에 엔터있고 """ 로 끝나서는 안된다. 마지막 배열로부터 \n 이 포함되어 
 sql_selectall = """insurance_nullfix.claim.ACCI_OCCP_GRP1,
 insurance_nullfix.claim.ACCI_OCCP_GRP2,
 insurance_nullfix.claim.CHANG_FP_YN,
@@ -309,7 +308,7 @@ try:
 
         #filename : (저장경로/)rand00 outdel0 dummy000 00 popcolumn.pickle
         #,와 \n 으로 만들어진 테이블 리스트는 , 는 잘 빠지지만 \n 은 안빠지므로 수동삭제
-        pickle_name = db_feature+' outdel'+str(ifoutdel)+' dummy'+str(afterdummy_variables_limit)+' tryno'+str(tryno)+' del-'+pop_column[pop_column.find(dbname)+len(dbname)+1:].strip()+'.pickle'
+        pickle_name = db_feature+' outdel'+str(ifoutdel)+' dummy'+str(afterdummy_variables_limit)+' tryno'+str(tryno)+' del-'+pop_column[pop_column.find(dbname)+len(dbname)+1:].strip().upper()+'.pickle'
         #+2는 마지막칸과 쿼리에 dbname 과 컬럼네임을 연결하는 . 을  포함한 것.
         #strip 을 사용하면 혹시모를 좌우공백과 엔터를 제거 (마지막 쿼리구문 이후 엔터후 """ 끝나는데서 \n 이 파일명에 들어가 생성불가 오류떴었음)
 
