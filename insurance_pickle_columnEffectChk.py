@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#코드내에 한글로 된 경로가 있을때 위 인코딩줄 빼면 세이브가 안되어 실행되지 않는다. 
+#DB는 고정된 상태로 쿼리에서 한줄씩 빼며 피클 만듬.
 
 import MySQLdb
 import datetime
@@ -10,11 +10,12 @@ import pandas
 
 #sql_selectall 에다가 select 할 쿼리를 적고
 #그 아래부분에 join 등 기타부분을 적고 
-#파일명 표시를 위해 dbname과 tryno 를 적고
+#파일명 표시를 위해 db_feature과 tryno 를 적고
 #피클생성시 outdel 실행 또는 dummylize 하기위해 변수를 적는다. 
 
 #서버접속 설정과 한글사용위한 인코딩 설정
-mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix')
+dbname='insurance_nullfix'
+mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db=dbname)
 cur=mydb.cursor()
 mydb.set_character_set('utf8')
 cur.execute('SET NAMES utf8;')
@@ -22,11 +23,11 @@ cur.execute('SET CHARACTER SET utf8;')
 cur.execute('SET character_set_connection=utf8;')
 
 
-dbname = 'rand01' #손으로 적어준다. DB이름 구분하기 위함 
+db_feature = 'rand01' #손으로 적어준다. DB이름 구분하기 위함 
 ifoutdel = 0 #0 또는 1
-afterdummy_variables_limit = 0 #0, 100, 1000
+afterdummy_variables_limit = 100 #0, 100, 1000
 #9/15 수정사항 : dummylize 0, 1 로 더미화 할꺼 체크하는게 아니라, dummy 리미트가 자기 고유컬럼수보다 적으면 작동안함. 0 넣으면 됨.
-tryno = '02' #같은피클 여러번 만들어서 검증해야한다. 각 피클 메이킹 프로세스 구분. 손으로 바꿔주면서 돌린다. 파일명 마지막에 들어감
+tryno = '00' #같은피클 여러번 만들어서 검증해야한다. 각 피클 메이킹 프로세스 구분. 손으로 바꿔주면서 돌린다. 파일명 마지막에 들어감
 
 #query . 끝에 Y/N 은 제외했다 나중에 붙임.
 #변수 구조상 cntt 를 뺄수는 없다. claim 변수가 메인이므로 cucntt 는 작게 줄여넣었다. dummylize도 0으로 고정시킴. 
@@ -43,82 +44,64 @@ sql_cucntt="""Select
   cust.SIU_CUST_YN ="""
 
 
-#쿼리를 그대로 쓰는게 아니고, select 안의 컬럼과 나머지를 분리한다. 
-sql_selectall = """insurance_nullfix.claim.HOSP_CODE,
-  insurance_nullfix.cust.AGE,
-  insurance_nullfix.cntt.CNTT_YM,
-  insurance_nullfix.cntt.CUST_ROLE,
-  insurance_nullfix.cntt.IRKD_CODE_DTAL,
-  insurance_nullfix.cntt.IRKD_CODE_ITEM,
-  insurance_nullfix.cntt.GOOD_CLSF_CDNM,
-  insurance_nullfix.cntt.CLLT_FP_PRNO,
-  insurance_nullfix.cntt.REAL_PAYM_TERM,
-  insurance_nullfix.cntt.SALE_CHNL_CODE,
-  insurance_nullfix.cntt.CNTT_STAT_CODE,
-  insurance_nullfix.cntt.EXPR_YM,
-  insurance_nullfix.cntt.EXTN_YM,
-  insurance_nullfix.cntt.LAPS_YM,
-  insurance_nullfix.cntt.PAYM_CYCL_CODE,
-  insurance_nullfix.cntt.MAIN_INSR_AMT,
-  insurance_nullfix.cntt.SUM_ORIG_PREM,
-  insurance_nullfix.cntt.RECP_PUBL,
-  insurance_nullfix.cntt.CNTT_RECP,
-  insurance_nullfix.cntt.MNTH_INCM_AMT,
-  insurance_nullfix.cntt.DISTANCE,
-  insurance_nullfix.cust.SEX,
-  insurance_nullfix.cust.RESI_COST,
-  insurance_nullfix.cust.RESI_TYPE_CODE,
-  insurance_nullfix.cust.FP_CAREER,
-  insurance_nullfix.cust.CUST_RGST,
-  insurance_nullfix.cust.CTPR,
-  insurance_nullfix.cust.OCCP_GRP1,
-  insurance_nullfix.cust.OCCP_GRP2,
-  insurance_nullfix.cust.TOTALPREM,
-  insurance_nullfix.cust.MINCRDT,
-  insurance_nullfix.cust.MAXCRDT,
-  insurance_nullfix.cust.WEDD_YN,
-  insurance_nullfix.cust.MATE_OCCP_GRP1,
-  insurance_nullfix.cust.MATE_OCCP_GRP2,
-  insurance_nullfix.cust.CHLD_CNT,
-  insurance_nullfix.cust.LTBN_CHLD_AGE,
-  insurance_nullfix.cust.MAX_PAYM_YM,
-  insurance_nullfix.cust.MAX_PRM,
-  insurance_nullfix.cust.CUST_INCM,
-  insurance_nullfix.cust.RCBASE_HSHD_INCM,
-  insurance_nullfix.cust.JPBASE_HSHD_INCM,
-  insurance_nullfix.claim.ACCI_OCCP_GRP1,
-  insurance_nullfix.claim.ACCI_OCCP_GRP2,
-  insurance_nullfix.claim.CHANG_FP_YN,
-  insurance_nullfix.claim.RECP_DATE,
-  insurance_nullfix.claim.ORIG_RESN_DATE,
-  insurance_nullfix.claim.RESN_DATE,
-  insurance_nullfix.claim.CRNT_PROG_DVSN,
-  insurance_nullfix.claim.ACCI_DVSN,
-  insurance_nullfix.claim.CAUS_CODE,
-  insurance_nullfix.claim.CAUS_CODE_DTAL,
-  insurance_nullfix.claim.DMND_RESN_CODE,
-  insurance_nullfix.claim.DMND_RSCD_SQNO,
-  insurance_nullfix.claim.HOSP_OTPA_STDT,
-  insurance_nullfix.claim.HOSP_OTPA_ENDT,
-  insurance_nullfix.claim.RESL_CD1,
-  insurance_nullfix.claim.HEED_HOSP_YN,
-  insurance_nullfix.claim.NON_PAY_RATIO,
-  insurance_nullfix.claim.DCAF_CMPS_XCPA,
-  insurance_nullfix.claim.COUNT_TRMT_ITEM,
-  insurance_nullfix.claim.DSCT_AMT,
-  insurance_nullfix.claim.PATT_CHRG_TOTA,
-  insurance_nullfix.claim.TAMT_SFCA,
-  insurance_nullfix.claim.NON_PAY,
-  insurance_nullfix.claim.SELF_CHAM,
-  insurance_nullfix.claim.PMMI_DLNG_YN,
-  insurance_nullfix.claim.PAYM_AMT,
-  insurance_nullfix.claim.DMND_AMT,
-  insurance_nullfix.claim.PAYM_DATE,
-  insurance_nullfix.claim.CHME_LICE_NO,
-  insurance_nullfix.claim.HOSP_SPEC_DVSN,
-  insurance_nullfix.claim.ACCI_HOSP_ADDR,
-  insurance_nullfix.claim.HOUSE_HOSP_DIST,
-  insurance_nullfix.claim.VLID_HOSP_OTDA
+#쿼리를 그대로 쓰는게 아니고, select 안의 컬럼과 나머지를 분리한다.  dbname으로 위치를 탐지하도록 기본세팅했기 때문에 DB명까지 풀 경로로 적어줘야 한다. 
+#마지막이 매우 중요한데, 마지막 테이블명 이후에 엔터있고 """ 로 끝나서는 안된다. 마지막 배열로부터 \n 이 포함되어 
+sql_selectall = """insurance_nullfix.claim.ACCI_OCCP_GRP1,
+insurance_nullfix.claim.ACCI_OCCP_GRP2,
+insurance_nullfix.claim.CHANG_FP_YN,
+insurance_nullfix.claim.RECP_DATE,
+insurance_nullfix.claim.ORIG_RESN_DATE,
+insurance_nullfix.claim.RESN_DATE,
+insurance_nullfix.claim.CRNT_PROG_DVSN,
+insurance_nullfix.claim.ACCI_DVSN,
+insurance_nullfix.claim.CAUS_CODE,
+insurance_nullfix.claim.CAUS_CODE_DTAL,
+insurance_nullfix.claim.DMND_RESN_CODE,
+insurance_nullfix.claim.DMND_RSCD_SQNO,
+insurance_nullfix.claim.HOSP_OTPA_STDT,
+insurance_nullfix.claim.HOSP_OTPA_ENDT,
+insurance_nullfix.claim.RESL_CD1,
+insurance_nullfix.claim.VLID_HOSP_OTDA,
+insurance_nullfix.claim.HOUSE_HOSP_DIST,
+insurance_nullfix.claim.HOSP_CODE,
+insurance_nullfix.claim.ACCI_HOSP_ADDR,
+insurance_nullfix.claim.HOSP_SPEC_DVSN,
+insurance_nullfix.claim.CHME_LICE_NO,
+insurance_nullfix.claim.PAYM_DATE,
+insurance_nullfix.claim.DMND_AMT,
+insurance_nullfix.claim.PAYM_AMT,
+insurance_nullfix.claim.PMMI_DLNG_YN,
+insurance_nullfix.claim.SELF_CHAM,
+insurance_nullfix.claim.NON_PAY,
+insurance_nullfix.claim.TAMT_SFCA,
+insurance_nullfix.claim.PATT_CHRG_TOTA,
+insurance_nullfix.claim.DSCT_AMT,
+insurance_nullfix.claim.COUNT_TRMT_ITEM,
+insurance_nullfix.claim.DCAF_CMPS_XCPA,
+insurance_nullfix.claim.NON_PAY_RATIO,
+insurance_nullfix.claim.HEED_HOSP_YN,
+insurance_nullfix.cust.SEX,
+insurance_nullfix.cust.AGE,
+insurance_nullfix.cust.RESI_COST,
+insurance_nullfix.cust.RESI_TYPE_CODE,
+insurance_nullfix.cust.FP_CAREER,
+insurance_nullfix.cust.CUST_RGST,
+insurance_nullfix.cust.CTPR,
+insurance_nullfix.cust.OCCP_GRP1,
+insurance_nullfix.cust.OCCP_GRP2,
+insurance_nullfix.cust.TOTALPREM,
+insurance_nullfix.cust.MINCRDT,
+insurance_nullfix.cust.MAXCRDT,
+insurance_nullfix.cust.WEDD_YN,
+insurance_nullfix.cust.MATE_OCCP_GRP1,
+insurance_nullfix.cust.MATE_OCCP_GRP2,
+insurance_nullfix.cust.CHLD_CNT,
+insurance_nullfix.cust.LTBN_CHLD_AGE,
+insurance_nullfix.cust.MAX_PAYM_YM,
+insurance_nullfix.cust.MAX_PRM,
+insurance_nullfix.cust.CUST_INCM,
+insurance_nullfix.cust.RCBASE_HSHD_INCM,
+insurance_nullfix.cust.JPBASE_HSHD_INCM
   """
 
 #select+자동 컬럼선택 + from to end (마지막에 YN=  까지만 적어서 자동 카테고리 되게)
@@ -325,8 +308,10 @@ try:
 
 
         #filename : (저장경로/)rand00 outdel0 dummy000 00 popcolumn.pickle
-        pickle_name = dbname+' outdel'+str(ifoutdel)+' dummy'+str(afterdummy_variables_limit)+' tryno'+str(tryno)+' del-'+pop_column[pop_column.find('insurance_nullfix')+len('insurance_nullfix')+1:]+'.pickle'
-
+        #,와 \n 으로 만들어진 테이블 리스트는 , 는 잘 빠지지만 \n 은 안빠지므로 수동삭제
+        pickle_name = db_feature+' outdel'+str(ifoutdel)+' dummy'+str(afterdummy_variables_limit)+' tryno'+str(tryno)+' del-'+pop_column[pop_column.find(dbname)+len(dbname)+1:].strip()+'.pickle'
+        #+2는 마지막칸과 쿼리에 dbname 과 컬럼네임을 연결하는 . 을  포함한 것.
+        #strip 을 사용하면 혹시모를 좌우공백과 엔터를 제거 (마지막 쿼리구문 이후 엔터후 """ 끝나는데서 \n 이 파일명에 들어가 생성불가 오류떴었음)
 
 #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
         cucntt_y=numpy.array(allFloat(getdata("cucntt",1)),dtype="float32")
