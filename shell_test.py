@@ -102,7 +102,7 @@ for h, filename in enumerate(os.listdir(folder)):
                 output.insert(0,learning_rate_init) #리턴값이 insert된 배열이 아니라.. 이거 실행만으로 insert 되는 함수임. 
                 output.insert(0,layer2_nodes)
                 output.insert(0,select)
-                output.insert(0,filename) #마지막에 0에 넣는게 가장 앞으로 오니까. 
+                output.insert(0,filename[:-7]) #마지막에 0에 넣는게 가장 앞으로 오니까.  확장자 .pickle 제거
                 #print(h,i,j,k)
                 print where(h,i,j,k), '/' ,n_total_test, output #현재 위치와 최대값 표시
                 test_result.append(output) #이것도 재할당 안해도 자동 적용되는거. 
