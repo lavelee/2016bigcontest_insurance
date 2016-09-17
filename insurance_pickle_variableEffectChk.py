@@ -30,7 +30,7 @@ cur.execute('SET character_set_connection=utf8;')
 
 db_feature = 'rand01' #손으로 적어준다. DB이름 구분하기 위함 
 ifoutdel = 0 #0 또는 1
-afterdummy_variables_limit = 100 #0, 100, 1000
+afterdummy_variables_limit = 0 #0, 100, 1000
 #9/15 수정사항 : dummylize 0, 1 로 더미화 할꺼 체크하는게 아니라, dummy 리미트가 자기 고유컬럼수보다 적으면 작동안함. 0 넣으면 됨.
 tryno = '00' #같은피클 여러번 만들어서 검증해야한다. 각 피클 메이킹 프로세스 구분. 손으로 바꿔주면서 돌린다. 파일명 마지막에 들어감
 
@@ -49,40 +49,26 @@ sql_cucntt="""Select
   cust.SIU_CUST_YN ="""
 
 #YN  마지막만 =  에서 끝내주면 된다
-sql_cuclaim = """Select insurance_nullfix.claim.ACCI_OCCP_GRP1,
-insurance_nullfix.claim.ACCI_OCCP_GRP2,
-insurance_nullfix.claim.CHANG_FP_YN,
-insurance_nullfix.claim.RECP_DATE,
-insurance_nullfix.claim.ORIG_RESN_DATE,
-insurance_nullfix.claim.RESN_DATE,
-insurance_nullfix.claim.CRNT_PROG_DVSN,
-insurance_nullfix.claim.ACCI_DVSN,
-insurance_nullfix.claim.CAUS_CODE,
-insurance_nullfix.claim.CAUS_CODE_DTAL,
-insurance_nullfix.claim.DMND_RESN_CODE,
-insurance_nullfix.claim.DMND_RSCD_SQNO,
-insurance_nullfix.claim.HOSP_OTPA_STDT,
-insurance_nullfix.claim.HOSP_OTPA_ENDT,
-insurance_nullfix.claim.RESL_CD1,
-insurance_nullfix.claim.VLID_HOSP_OTDA,
-insurance_nullfix.claim.HOUSE_HOSP_DIST,
-insurance_nullfix.claim.HOSP_CODE,
-insurance_nullfix.claim.ACCI_HOSP_ADDR,
-insurance_nullfix.claim.HOSP_SPEC_DVSN,
-insurance_nullfix.claim.CHME_LICE_NO,
-insurance_nullfix.claim.PAYM_DATE,
-insurance_nullfix.claim.DMND_AMT,
-insurance_nullfix.claim.PAYM_AMT,
-insurance_nullfix.claim.PMMI_DLNG_YN,
-insurance_nullfix.claim.SELF_CHAM,
-insurance_nullfix.claim.NON_PAY,
-insurance_nullfix.claim.TAMT_SFCA,
-insurance_nullfix.claim.PATT_CHRG_TOTA,
-insurance_nullfix.claim.DSCT_AMT,
-insurance_nullfix.claim.COUNT_TRMT_ITEM,
-insurance_nullfix.claim.DCAF_CMPS_XCPA,
-insurance_nullfix.claim.NON_PAY_RATIO,
-insurance_nullfix.claim.HEED_HOSP_YN,
+sql_cuclaim = """Select
+insurance_nullfix.cntt.CUST_ROLE,
+insurance_nullfix.cntt.IRKD_CODE_DTAL,
+insurance_nullfix.cntt.IRKD_CODE_ITEM,
+insurance_nullfix.cntt.GOOD_CLSF_CDNM,
+insurance_nullfix.cntt.CNTT_YM,
+insurance_nullfix.cntt.CLLT_FP_PRNO,
+insurance_nullfix.cntt.REAL_PAYM_TERM,
+insurance_nullfix.cntt.SALE_CHNL_CODE,
+insurance_nullfix.cntt.CNTT_STAT_CODE,
+insurance_nullfix.cntt.EXPR_YM,
+insurance_nullfix.cntt.EXTN_YM,
+insurance_nullfix.cntt.LAPS_YM,
+insurance_nullfix.cntt.PAYM_CYCL_CODE,
+insurance_nullfix.cntt.MAIN_INSR_AMT,
+insurance_nullfix.cntt.SUM_ORIG_PREM,
+insurance_nullfix.cntt.RECP_PUBL,
+insurance_nullfix.cntt.CNTT_RECP,
+insurance_nullfix.cntt.MNTH_INCM_AMT,
+insurance_nullfix.cntt.DISTANCE,
 insurance_nullfix.cust.SEX,
 insurance_nullfix.cust.AGE,
 insurance_nullfix.cust.RESI_COST,
@@ -106,11 +92,9 @@ insurance_nullfix.cust.CUST_INCM,
 insurance_nullfix.cust.RCBASE_HSHD_INCM,
 insurance_nullfix.cust.JPBASE_HSHD_INCM
 From
-        insurance_nullfix.claim Left Join 
-        insurance_nullfix.cust 
+        insurance_nullfix.claim Left Join insurance_nullfix.cust 
         On insurance_nullfix.claim.CUST_ID = insurance_nullfix.cust.CUST_ID
-        Left Join
-        insurance_nullfix.cntt
+        Left Join insurance_nullfix.cntt
         On insurance_nullfix.claim.POLY_NO = insurance_nullfix.cntt.POLY_NO And
         insurance_nullfix.cntt.CUST_ID = insurance_nullfix.claim.CUST_ID
         where
@@ -256,7 +240,7 @@ def dummylize(array,cat_index,sql):
         i+=1
     #print(column_names)
     #print 'after dummylyze, ',array.shape[1],' columns.'
-    return column_names, array
+    return numpy.array(column_names), array
 
 def chkDistri(data, divide=10): #기본 값구간 10개로 나눔.  [총평균,총개수, 구간1평균,구간1개수, 구간2평균,구간2개수 ... ]
     data=numpy.array(data,dtype='float32')
@@ -317,7 +301,7 @@ try:
     cucntt_cat_tf_index=autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,0)) #cucntt 는 언제나 더미화 안되게 하기.
     cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit)) #값 크기에 따라 더미화 됨. 
     cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt) 
-    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim) 
+    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim)
     cucntt=normalize(cucntt) #합친김에 normalize
     cuclaim=normalize(cuclaim)
     #print 'cucntt shape : ',cucntt.shape
@@ -325,7 +309,7 @@ try:
     cucntt_y=cucntt[:cucntt_y.shape[0]] #합쳤던 테이블 분리
     cucntt_n=cucntt[cucntt_y.shape[0]:]
     cuclaim_y=cuclaim[:cuclaim_y.shape[0]]
-    cuclaim_n=cuclaim[cuclaim_n.shape[0]:]
+    cuclaim_n=cuclaim[cuclaim_y.shape[0]:]
     del cucntt, cuclaim #메모리를 위해. 
 
 #라벨링한뒤에 class들 합치기

@@ -19,7 +19,7 @@ cur.execute('SET character_set_connection=utf8;')
 ifdummy=0
 afterdummy_variables_limit=0.01 #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
                                             #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
-pickle_name='cucntt_cuclaim_null_randomfix.pickle' #만들어진 피클 이름. picklize 에서 쓴다. 
+pickle_name='clcucntt_rand01.pickle' #만들어진 피클 이름. picklize 에서 쓴다. 
 
 
 #query . 끝에 Y/N 은 제외했다 나중에 붙임.
@@ -38,91 +38,48 @@ sql_cucntt="""Select
   
 #실제로는 cuclcntt 로 세 테이블 합쳐지는 쿼리임. 변수명 귀찮아서 안 바꿈. 
 sql_cuclaim="""Select
-  insurance_nullfix.claim.HOSP_CODE,
-  insurance_nullfix.cust.AGE,
-  insurance_nullfix.cntt.CNTT_YM,
-  insurance_nullfix.cntt.CUST_ROLE,
-  insurance_nullfix.cntt.IRKD_CODE_DTAL,
-  insurance_nullfix.cntt.IRKD_CODE_ITEM,
-  insurance_nullfix.cntt.GOOD_CLSF_CDNM,
-  insurance_nullfix.cntt.CLLT_FP_PRNO,
-  insurance_nullfix.cntt.REAL_PAYM_TERM,
-  insurance_nullfix.cntt.SALE_CHNL_CODE,
-  insurance_nullfix.cntt.CNTT_STAT_CODE,
-  insurance_nullfix.cntt.EXPR_YM,
-  insurance_nullfix.cntt.EXTN_YM,
-  insurance_nullfix.cntt.LAPS_YM,
-  insurance_nullfix.cntt.PAYM_CYCL_CODE,
-  insurance_nullfix.cntt.MAIN_INSR_AMT,
-  insurance_nullfix.cntt.SUM_ORIG_PREM,
-  insurance_nullfix.cntt.RECP_PUBL,
-  insurance_nullfix.cntt.CNTT_RECP,
-  insurance_nullfix.cntt.MNTH_INCM_AMT,
-  insurance_nullfix.cntt.DISTANCE,
-  insurance_nullfix.cust.SEX,
-  insurance_nullfix.cust.RESI_COST,
-  insurance_nullfix.cust.RESI_TYPE_CODE,
-  insurance_nullfix.cust.FP_CAREER,
-  insurance_nullfix.cust.CUST_RGST,
-  insurance_nullfix.cust.CTPR,
-  insurance_nullfix.cust.OCCP_GRP1,
-  insurance_nullfix.cust.OCCP_GRP2,
-  insurance_nullfix.cust.TOTALPREM,
-  insurance_nullfix.cust.MINCRDT,
-  insurance_nullfix.cust.MAXCRDT,
-  insurance_nullfix.cust.WEDD_YN,
-  insurance_nullfix.cust.MATE_OCCP_GRP1,
-  insurance_nullfix.cust.MATE_OCCP_GRP2,
-  insurance_nullfix.cust.CHLD_CNT,
-  insurance_nullfix.cust.LTBN_CHLD_AGE,
-  insurance_nullfix.cust.MAX_PAYM_YM,
-  insurance_nullfix.cust.MAX_PRM,
-  insurance_nullfix.cust.CUST_INCM,
-  insurance_nullfix.cust.RCBASE_HSHD_INCM,
-  insurance_nullfix.cust.JPBASE_HSHD_INCM,
-  insurance_nullfix.claim.ACCI_OCCP_GRP1,
-  insurance_nullfix.claim.ACCI_OCCP_GRP2,
-  insurance_nullfix.claim.CHANG_FP_YN,
-  insurance_nullfix.claim.RECP_DATE,
-  insurance_nullfix.claim.ORIG_RESN_DATE,
-  insurance_nullfix.claim.RESN_DATE,
-  insurance_nullfix.claim.CRNT_PROG_DVSN,
-  insurance_nullfix.claim.ACCI_DVSN,
-  insurance_nullfix.claim.CAUS_CODE,
-  insurance_nullfix.claim.CAUS_CODE_DTAL,
-  insurance_nullfix.claim.DMND_RESN_CODE,
-  insurance_nullfix.claim.DMND_RSCD_SQNO,
-  insurance_nullfix.claim.HOSP_OTPA_STDT,
-  insurance_nullfix.claim.HOSP_OTPA_ENDT,
-  insurance_nullfix.claim.RESL_CD1,
-  insurance_nullfix.claim.HEED_HOSP_YN,
-  insurance_nullfix.claim.NON_PAY_RATIO,
-  insurance_nullfix.claim.DCAF_CMPS_XCPA,
-  insurance_nullfix.claim.COUNT_TRMT_ITEM,
-  insurance_nullfix.claim.DSCT_AMT,
-  insurance_nullfix.claim.PATT_CHRG_TOTA,
-  insurance_nullfix.claim.TAMT_SFCA,
-  insurance_nullfix.claim.NON_PAY,
-  insurance_nullfix.claim.SELF_CHAM,
-  insurance_nullfix.claim.PMMI_DLNG_YN,
-  insurance_nullfix.claim.PAYM_AMT,
-  insurance_nullfix.claim.DMND_AMT,
-  insurance_nullfix.claim.PAYM_DATE,
-  insurance_nullfix.claim.CHME_LICE_NO,
-  insurance_nullfix.claim.HOSP_SPEC_DVSN,
-  insurance_nullfix.claim.ACCI_HOSP_ADDR,
-  insurance_nullfix.claim.HOUSE_HOSP_DIST,
-  insurance_nullfix.claim.VLID_HOSP_OTDA
+insurance_nullfix.claim.ACCI_OCCP_GRP1,
+insurance_nullfix.claim.ACCI_OCCP_GRP2,
+insurance_nullfix.claim.CHANG_FP_YN,
+insurance_nullfix.claim.RECP_DATE,
+insurance_nullfix.claim.ORIG_RESN_DATE,
+insurance_nullfix.claim.RESN_DATE,
+insurance_nullfix.claim.CRNT_PROG_DVSN,
+insurance_nullfix.claim.ACCI_DVSN,
+insurance_nullfix.claim.CAUS_CODE,
+insurance_nullfix.claim.CAUS_CODE_DTAL,
+insurance_nullfix.claim.DMND_RESN_CODE,
+insurance_nullfix.claim.DMND_RSCD_SQNO,
+insurance_nullfix.claim.HOSP_OTPA_STDT,
+insurance_nullfix.claim.HOSP_OTPA_ENDT,
+insurance_nullfix.claim.RESL_CD1,
+insurance_nullfix.claim.VLID_HOSP_OTDA,
+insurance_nullfix.claim.HOUSE_HOSP_DIST,
+insurance_nullfix.claim.HOSP_CODE,
+insurance_nullfix.claim.ACCI_HOSP_ADDR,
+insurance_nullfix.claim.HOSP_SPEC_DVSN,
+insurance_nullfix.claim.CHME_LICE_NO,
+insurance_nullfix.claim.PAYM_DATE,
+insurance_nullfix.claim.DMND_AMT,
+insurance_nullfix.claim.PAYM_AMT,
+insurance_nullfix.claim.PMMI_DLNG_YN,
+insurance_nullfix.claim.SELF_CHAM,
+insurance_nullfix.claim.NON_PAY,
+insurance_nullfix.claim.TAMT_SFCA,
+insurance_nullfix.claim.PATT_CHRG_TOTA,
+insurance_nullfix.claim.DSCT_AMT,
+insurance_nullfix.claim.COUNT_TRMT_ITEM,
+insurance_nullfix.claim.DCAF_CMPS_XCPA,
+insurance_nullfix.claim.NON_PAY_RATIO,
+insurance_nullfix.claim.HEED_HOSP_YN
 From
-  insurance_nullfix.claim Left Join
-  insurance_nullfix.cust
-    On insurance_nullfix.claim.CUST_ID = insurance_nullfix.cust.CUST_ID
-  Left Join
-  insurance_nullfix.cntt
-    On insurance_nullfix.claim.POLY_NO = insurance_nullfix.cntt.POLY_NO And
-    insurance_nullfix.cntt.CUST_ID = insurance_nullfix.claim.CUST_ID
-  where
-  cust.SIU_CUST_YN = """
+        insurance_nullfix.claim Left Join insurance_nullfix.cust 
+        On insurance_nullfix.claim.CUST_ID = insurance_nullfix.cust.CUST_ID
+        Left Join insurance_nullfix.cntt
+        On insurance_nullfix.claim.POLY_NO = insurance_nullfix.cntt.POLY_NO And
+        insurance_nullfix.cntt.CUST_ID = insurance_nullfix.claim.CUST_ID
+        where
+        cust.SIU_CUST_YN =  """
 
 def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우 단어 받아서 컬럼네임 배열로 출력. 
     sql=sql.upper()
@@ -140,7 +97,7 @@ def getdata(target,yn):
         sql=sql_cucntt+yn
     elif target=="cuclaim":
         sql=sql_cuclaim+yn
-    #sql=sql+' limit 2' #테스트용 10개만 뽑아볼때쓰는 코드
+    #sql=sql+' limit 100' #테스트용 10개만 뽑아볼때쓰는 코드
     #print sql #쿼리 만들어진거 확인
     cur.execute(sql)
     return [list(a) for a in cur.fetchall()] #왜 tuple 로 받아오지? list로 못받아오나? list() 쓰면되는군
@@ -235,6 +192,7 @@ def showCategoricalLimit(array,total_variable_limit=0.01): #기본값으로 데�
 
 def dummylize(array,cat_index,sql,dummylize=1):
     if dummylize==0:
+        print('dummylize cancelled. passing original array...')
         cat_index=numpy.zeros(cat_index.shape[0])
     column_names=columnNames(sql) #더미화된 결과 컬럼이름 받기위해 sql 을 받아오기로 함. 
     print '\nbefore dummylize, ',array.shape[1],' columns. ' 
@@ -301,18 +259,19 @@ def chkDistri(data, divide=10): #기본 값구간 10개로 나눔.  [총평균,�
 try:
 #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
     cucntt_y=numpy.array(allFloat(getdata("cucntt",1)),dtype="float32")
-    #print'cucntt_y volume : ',cucntt_y.shape
+    print'cucntt_y volume : ',cucntt_y.shape
     cucntt_n=numpy.array(allFloat(getdata("cucntt",0)),dtype="float32")
-    #print'cucntt_n volume : ',cucntt_n.shape
+    print'cucntt_n volume : ',cucntt_n.shape
     cuclaim_y=numpy.array(allFloat(getdata("cuclaim",1)),dtype="float32")
-    #print'cuclaim_y volume : ',cuclaim_y.shape
+    print'cuclaim_y volume : ',cuclaim_y.shape
     cuclaim_n=numpy.array(allFloat(getdata("cuclaim",0)),dtype="float32")
-    #print'cuclaim_n volume : ',cuclaim_n.shape
+    print'cuclaim_n volume : ',cuclaim_n.shape
 
 
 #dummy화                 
     cucntt =numpy.concatenate((cucntt_y,cucntt_n),0)#더미화 위해 잠시 테이블 합침
     cuclaim=numpy.concatenate((cuclaim_y,cuclaim_n),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
+    print 'after concatenate :',cucntt.shape, cuclaim.shape
     #아래는 자동으로 카테고리 컬럼이 뭔지 생성. 
     cucntt_cat_tf_index=autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,afterdummy_variables_limit)) #자동변수 . 아니면 수동으로
     cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit))
@@ -320,12 +279,18 @@ try:
     cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim,ifdummy) #cucntt 가 필요가 없어서 더미화에 포함안되게 ifdummy 를 항상 0 으로 만들어뒀음. 
     cucntt=normalize(cucntt) #합친김에 normalize
     cuclaim=normalize(cuclaim)
-    print 'cucntt shape : ',cucntt.shape
+    print '\ncucntt shape : ',cucntt.shape
     print 'cuclaim shape : ',cuclaim.shape
     cucntt_y=cucntt[:cucntt_y.shape[0]] #합쳤던 테이블 분리
     cucntt_n=cucntt[cucntt_y.shape[0]:]
     cuclaim_y=cuclaim[:cuclaim_y.shape[0]]
-    cuclaim_n=cuclaim[cuclaim_n.shape[0]:]
+    cuclaim_n=cuclaim[cuclaim_y.shape[0]:]
+    print '\n','after normalize & dummylize'
+    print'cucntt_y volume : ',cucntt_y.shape
+    print'cucntt_n volume : ',cucntt_n.shape
+    print'cuclaim_y volume : ',cuclaim_y.shape
+    print'cuclaim_n volume : ',cuclaim_n.shape,'\n'
+
     del cucntt, cuclaim #메모리를 위해. 
 
 #라벨링한뒤에 class들 합치기

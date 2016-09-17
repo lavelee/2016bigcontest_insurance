@@ -337,7 +337,7 @@ try:
     cucntt_y=cucntt[:cucntt_y.shape[0]] #합쳤던 테이블 분리
     cucntt_n=cucntt[cucntt_y.shape[0]:]
     cuclaim_y=cuclaim[:cuclaim_y.shape[0]]
-    cuclaim_n=cuclaim[cuclaim_n.shape[0]:]
+    cuclaim_n=cuclaim[cuclaim_y.shape[0]:]
     del cucntt, cuclaim #메모리를 위해. 
 
 #라벨링한뒤에 class들 합치기
