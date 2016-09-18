@@ -5,7 +5,7 @@ import MySQLdb
 import datetime
 import pickle
 import numpy
-import os
+import os, sys
 import pandas
 
 #서버접속 설정과 한글사용위한 인코딩 설정
@@ -17,16 +17,28 @@ cur.execute('SET CHARACTER SET utf8;')
 cur.execute('SET character_set_connection=utf8;')
 
 ifnormalize=1
-ifdummy=0
-afterdummy_variables_limit=100 #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
+afterdummy_variables_limit=0 #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
                                             #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
 pickle_name='clcntt_randfix01.pickle' #만들어진 피클 이름. picklize 에서 쓴다. 
 
 
-#query . 끝에 Y/N 은 제외했다 나중에 붙임.
+#혹시 외부변수가 있다면 외부변수 우선 설정. 
+try :
+    pickle_name = sys.argv[1]
+except IndexError :
+    pass
+try :
+    ifnormalize = sys.argv[2]
+except IndexError :
+    pass
+try :
+    afterdummy_variables_limit = sys.argv[3]
+except IndexError :
+    pass
 
-#실제로는 cuclcntt 로 세 테이블 합쳐지는 쿼리임. 변수명 귀찮아서 안 바꿈. 
-sql_cuclaim="""Select
+
+#query . 끝에 Y/N 은 제외했다 나중에 붙임.
+sql_input="""Select
   insurance_nullfix.claim.HOSP_CODE,
   insurance_nullfix.cust.AGE,
   insurance_nullfix.cntt.CNTT_YM,
@@ -92,6 +104,7 @@ From
   Where
   cust.SIU_CUST_YN = """
 
+
 def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우 단어 받아서 컬럼네임 배열로 출력. 
     sql=sql.upper()
     initial=initial.upper()
@@ -102,9 +115,9 @@ def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우
     #print len(column_names)
     return column_names
 
-def getdata(target,yn):
+def getdata(yn):
     yn=str(yn) #숫자로 넘어온거 문자로 바꿔서 더할수있게
-    sql=sql_cuclaim+yn
+    sql=sql_input+yn
     #sql=sql+' limit 100' #테스트용 10개만 뽑아볼때쓰는 코드
     #print sql #쿼리 만들어진거 확인
     cur.execute(sql)
@@ -160,12 +173,17 @@ def dataDivide(labels,dataset,test_ratio=0.2): #일정비율로 테스트와 트
 def pickletest(pickle_name):
     with open(pickle_name,'rb') as g:
         data=pickle.load(g)
-        print data['test_cuclaim_label'][10]
-        print data['test_cuclaim_data'][10]
+        print data['test_label'][10]
+        print data['test_data'][10]
 
 def autoCategoricalIndex(array,n_category_limit=100): #numpy array 받음
     #유니크 자료수가 100개 미만이면 categorical 로 분류해 [true, false, false,.... ] 로 만들어 내보낸다.
-    return numpy.array(unqCount(array)<n_category_limit)
+    if n_category_limit>0:
+      autocat=numpy.array(unqCount(array)<n_category_limit)
+    else : #0또는 그 아래 값일때 
+      autocat=numpy.zeros(array.shape[0]) #다 false 로 반환한다.
+    return autocat
+
 
 def unqCount(array):
     unq_count=[]
@@ -188,7 +206,8 @@ def showCategoricalLimit(array,total_variable_limit=0.01): #기본값으로 데�
 
     n_total_variables=array.shape[1]
     if limit < n_total_variables:
-        raise NameError('받은 배열의 컬럼이 limit 개수보다 많아서 더미화를 진행할 수 없습니다')
+        print('받은 배열의 컬럼이 limit 개수보다 많아서 더미화 하지 않습니다.')
+        return -1
 
     for i in range(0,unq_sorted.shape[0]):
         n_total_variables += unq_sorted[i]-1 #해당 변수를 dummylize 해서 추가된 변수개수를 포함하면 총 변수개수는 몇개가 되는가.
@@ -207,7 +226,7 @@ def dummylize(array,cat_index,sql,dummylize=1):
         cat_index=numpy.zeros(cat_index.shape[0])
     column_names=columnNames(sql) #더미화된 결과 컬럼이름 받기위해 sql 을 받아오기로 함. 
     print '\nbefore dummylize, ',array.shape[1],' columns. ' 
-    print 'got index 5 columns',cat_index.shape[0]
+    print 'got index ',cat_index.shape[0],'columns'
     i=0 # numpy 배열은 enumerate 사용불가라서 어쩔수없이.. 
     for cat_yn in cat_index:
         if cat_yn :
@@ -269,53 +288,53 @@ def chkDistri(data, divide=10): #기본 값구간 10개로 나눔.  [총평균,�
 
 try:
 #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
-    cuclaim_y=numpy.array(allFloat(getdata("cuclaim",1)),dtype="float32")
-    print'cuclaim_y volume : ',cuclaim_y.shape
-    cuclaim_n=numpy.array(allFloat(getdata("cuclaim",0)),dtype="float32")
-    print'cuclaim_n volume : ',cuclaim_n.shape
+    get_y=numpy.array(allFloat(getdata(1)),dtype='float32')
+    print'get_y volume : ',get_y.shape
+    get_n=numpy.array(allFloat(getdata(0)),dtype='float32')
+    print'get_n volume : ',get_n.shape
 
 
 #dummy화                 
-    cuclaim=numpy.concatenate((cuclaim_y,cuclaim_n),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
-    print 'after concatenate :', cuclaim.shape
+    get=numpy.concatenate((get_y,get_n),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
+    print 'after concatenate :', get.shape
     #아래는 자동으로 카테고리 컬럼이 뭔지 생성. 
-    cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit))
-    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim,ifdummy)
-    cuclaim=normalize(cuclaim,ifnormalize)
-    print 'cuclaim shape : ',cuclaim.shape
-    cuclaim_y=cuclaim[:cuclaim_y.shape[0]]
-    cuclaim_n=cuclaim[cuclaim_y.shape[0]:]
+    get_cat_tf_index=autoCategoricalIndex(get,showCategoricalLimit(get,afterdummy_variables_limit))
+    get_cnames, get=dummylize(get, get_cat_tf_index, sql_input)
+    get=normalize(get,ifnormalize)
+    print 'get shape : ',get.shape
+    get_y=get[:get_y.shape[0]]
+    get_n=get[get_y.shape[0]:]
     print '\n','after normalize & dummylize'
-    print'cuclaim_y volume : ',cuclaim_y.shape
-    print'cuclaim_n volume : ',cuclaim_n.shape,'\n'
+    print'get_y volume : ',get_y.shape
+    print'get_n volume : ',get_n.shape,'\n'
 
-    del cuclaim #메모리를 위해. 
+    del get #메모리를 위해. 
 
 #라벨링한뒤에 class들 합치기
-    cuclaim_label=numpy.concatenate((numpy.zeros(cuclaim_y.shape[0])+1,numpy.zeros(cuclaim_n.shape[0])),axis=0)
-    cuclaim_data=numpy.concatenate((cuclaim_y,cuclaim_n),axis=0)
-    #print'cuclaim label, data : ',cuclaim_label.shape, cuclaim_data.shape
+    label=numpy.concatenate((numpy.zeros(get_y.shape[0])+1,numpy.zeros(get_n.shape[0])),axis=0)
+    data=numpy.concatenate((get_y,get_n),axis=0)
+    #print' label, data : ',label.shape, data.shape
 
 #위치 섞기
-    cuclaim_label,cuclaim_data=randomize(cuclaim_label,cuclaim_data,)
-    #print(cuclaim_label)
+    label,data=randomize(label,data)
+    #print(label)
 
 #test / train set 분리
-    test_cuclaim_label, test_cuclaim_data, train_cuclaim_label, train_cuclaim_data = dataDivide(cuclaim_label,cuclaim_data)
-    #print'test_cuclaim_label , train_cuclaim_label shape : ',test_cuclaim_label.shape,train_cuclaim_label.shape
+    test_label, test_data, train_label, train_data = dataDivide(label,data)
+    #print'test_label , train_label shape : ',test_label.shape,train_label.shape
 
 #train set distribution analysis [전체평균,전체개수,구간1평균, 구간1개수, 구간2평균, 구간2개수 ... ]
-    train_cuclaim_distri = chkDistri(train_cuclaim_data)
+    train_distri = chkDistri(train_data)
 
 #picklelize
     f = open(pickle_name,'wb')
     save={
-        'test_cuclaim_label' : test_cuclaim_label,
-        'test_cuclaim_data' : test_cuclaim_data,
-        'train_cuclaim_label' : train_cuclaim_label,
-        'train_cuclaim_data' : train_cuclaim_data,
-        'cuclaim_column_names' : cuclaim_cnames,
-        'train_cuclaim_distri' : train_cuclaim_distri
+        'test_label' : test_label,
+        'test_data' : test_data,
+        'train_label' : train_label,
+        'train_data' : train_data,
+        'col_names' : get_cnames,
+        'distribution' : train_distri
         }
     pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
     f.close()
