@@ -73,8 +73,8 @@ def randNull(table,column):
     #print'column number = ',column,'    adv_skima[table][column][0] = ',adv_skima[table][column][0]
     col_avg=adv_skima[table][column][1]
     col_std=adv_skima[table][column][2]
-    print(col_avg)
-    print(col_std)
+    #print(col_avg)
+    #print(col_std)
     rand_data=np.random.normal(col_avg,col_std,1)[0]
     #print(rand_data) 랜덤으로 만든 값
     if adv_skima[table][column][3]=='date': #넣으려는 컬럼이 date타입인데 내가 second 형태로 값을 가질경우 바꿔서 넣어줘야 한다. 

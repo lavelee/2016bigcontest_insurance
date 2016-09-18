@@ -32,4 +32,4 @@ lab              =np.array([[1,0],    [0,1],[0,1],[0,1]],dtype='float32')
 
 #print pr
 #print lab
-f1Score(0,lab)
+f1Score(pr,lab)

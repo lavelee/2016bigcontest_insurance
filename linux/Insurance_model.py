@@ -84,9 +84,9 @@ with graph.as_default():
   L1_logits= tf.nn.dropout(tf.matmul(tf_train_dataset, L1_weights) + L1_biases,keep_ratio)
     
   L2_weights = tf.Variable(
-    tf.truncated_normal([layer2_nodes, num_labels], mean=0.0, stddev=w_init_deviation))
+    tf.truncated_normal([layer2_nodes, num_labels], mean=0.0, stddev=w_init_deviation)) #다음레이어는 classifier 니까 class개수.
   L2_biases = tf.Variable(tf.zeros([num_labels]))
-  L2_logits=tf.matmul(tf.nn.relu(L1_logits), L2_weights) + L2_biases
+  L2_logits=tf.matmul(tf.nn.relu(L1_logits), L2_weights) + L2_biases #마지막 레이어는 dropout 하지않음
     
   loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(L2_logits, tf_train_labels))
     
@@ -149,7 +149,7 @@ def sheetmake(data,excel_name):
                 input_value=np.asscalar(dictdata[n_row,n_col])          #python native 로 바꿔주는 코드. 이것과 아래줄 둘중하나 필수. 
                 #input_value=dictdata[n_row,n_col]                           #str 오류날때 asscalar 빼면 될때있음
                 sheet.cell(row=n_row+1,column=n_col+1).value=input_value    #엑셀에선 행,열 첫번호가 1 
-            #sheet.column_dimensions[openpyxl.cell.get_column_letter(n_col+1)].width = 2.76 #컬럼 넓이 조절. 필요 없으면 빼기
+            sheet.column_dimensions[openpyxl.cell.get_column_letter(n_col+1)].width = 2.76 #컬럼 넓이 조절. 필요 없으면 빼기
         print('making sheet : ',dictitle)
     sheet = book.get_sheet_by_name('Sheet') #select sheet named Sheet
     book.remove_sheet(sheet) #delete that sheet

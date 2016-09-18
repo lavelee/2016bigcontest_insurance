@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#윈도우에서 DB에서 테스트용 피클파일을 여럿 만들기위한 쉘파일.
+#SQL에서 DB에서 테스트용 피클파일을 여럿 만들기위한 쉘파일. SQL파일 모인 폴더가 필요하므로, 이미 들어간 파일을 단순 여럿 만들고싶다면 insurance_pickle 사용.
 #현재 DB 이름은 SQL 내보내기에서 미리 결정되어 sql 파일안에 들어가있는 상태이다. 따라서 insurance_nullfix  외에 다른 DB를 만드는 파일을 불러오면 현재 동작하지 않는다. 
 #먼저 DB를 제거하고 시작하기때문에, 미리 insurace_nullfix 가 있어야 한다. 
 #SQL 이 든 폴더에 pickle 파일을 만들기 때문에 재실행시 생성된 pickle 파일을 지워줘야 한다. 아니면 오류남 
@@ -18,7 +18,7 @@ dbname='insurance_nullfix'                                                      
 sql_folder = 'c:/sql_to_pickle_forshell/db_sql/'               #nullfix DB 를 만들어주는 sql 폴더. 경로구분자를 \ 에서 / 로 변경했다. 경로에 한글이 있으면 안된다 . 마지막에 / 를 추가해줘야한다. 
 subpy = 'c:/sql_to_pickle_forshell/insurance_pickle_forshell.py'    #실행할 py 파일. 한글경로 들어가면 안됨
 #변화시킬 변수지정 
-outdel=[0,1]
+outdel=[0]
 dummy=[0,100] #원래 함수는 %로도 되어서 0.01 를 받았는데, subpy를 수정해서 int 로 변환하게 해놨으므로 정수만 넣자. 
 n_pickle=2
 

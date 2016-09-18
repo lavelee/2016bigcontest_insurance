@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+#구간별 개수 세봄.
 import numpy, pickle
 pickle_name='cucntt_cuclaim_null_randomfix.pickle' 
 

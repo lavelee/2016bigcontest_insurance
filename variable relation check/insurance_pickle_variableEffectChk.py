@@ -1,33 +1,55 @@
 # -*- coding: utf-8 -*-
-#코드내에 한글로 된 경로가 있을때 위 인코딩줄 빼면 세이브가 안되어 실행되지 않는다. 
+#column effect chk 가 컬럼하나씩 뺐다면, variable 은 범주형 자료형을 dummylize 로 펼친 그 하나하나까지 순환하며 만드는거임. 
+#column effect chk 에서도 dummylize 가 있지만, 하나씩 빼는 순환에서 먼저 컬럼 드랍을 하고 dummylize 하니 각 범주들의 임팩트는 알수가 없음. 
+#그래서 컬럼드랍 전에 더미라이즈를 먼저 하고, 이후에 드랍하도록 수정. 더이상 sql select 에서 컬럼명 안가져오고, 더미라이즈 된 인덱스에서 가져옴. 
+#더미라이즈 했던 안했던 쿼리기준 컬럼 통채로 빼려면 columneffect 를 쓰고, 더미라이즈 후 컬럼줄을 한줄씩 빼려면 이거 쓰고, 더미라이즈 안하면 이걸 쓰나 그걸 쓰나 같음. 
+#더미라이즈 할 경우는 개별 변수를 알고싶은거니까, 결국 이 파일만 쓰면 되긴 함. 
+# 매번 조회하고 만들어내는게 아니라, 한번 만든다음 마지막에 빼기만 해서 훨씬 빠르니 이거쓰자
 
 import MySQLdb
 import datetime
 import pickle
 import numpy
-import os
+import os, sys
 import pandas
 
+#sql_selectall 에다가 select 할 쿼리를 적고
+#그 아래부분에 join 등 기타부분을 적고 
+#파일명 표시를 위해 db_feature과 tryno 를 적고
+#피클생성시 outdel 실행 또는 dummylize 하기위해 변수를 적는다. 
+
 #서버접속 설정과 한글사용위한 인코딩 설정
-mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix') #쿼리에 DB 명 지정되어있으면 이거 바꿔도 적용 안됨.
+dbname='insurance_nullfix'
+mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db=dbname)
 cur=mydb.cursor()
 mydb.set_character_set('utf8')
 cur.execute('SET NAMES utf8;')
 cur.execute('SET CHARACTER SET utf8;')
 cur.execute('SET character_set_connection=utf8;')
 
-ifnormalize=1
-ifdummy=0
-afterdummy_variables_limit=100 #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
-                                            #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
-pickle_name='clcntt_randfix01.pickle' #만들어진 피클 이름. picklize 에서 쓴다. 
 
+db_feature = 'rand01' #손으로 적어준다. DB이름 구분하기 위함 
+ifoutdel = 0 #0 또는 1
+afterdummy_variables_limit = 0 #0, 100, 1000
+#9/15 수정사항 : dummylize 0, 1 로 더미화 할꺼 체크하는게 아니라, dummy 리미트가 자기 고유컬럼수보다 적으면 작동안함. 0 넣으면 됨.
+tryno = '02' #같은피클 여러번 만들어서 검증해야한다. 각 피클 메이킹 프로세스 구분. 손으로 바꿔주면서 돌린다. 파일명 마지막에 들어감
 
 #query . 끝에 Y/N 은 제외했다 나중에 붙임.
-#claim 변수가 메인이므로 cucntt 는 작게 줄임
+#변수 구조상 cntt 를 뺄수는 없다. claim 변수가 메인이므로 cucntt 는 작게 줄여넣었다. dummylize도 0으로 고정시킴. 
+sql_cucntt="""Select
+  cntt.CUST_ROLE,
+  cntt.MAIN_INSR_AMT,
+  cntt.SUM_ORIG_PREM,
+  cntt.RECP_PUBL
+  From
+  cntt Left Join
+  cust
+    On cntt.CUST_ID = cust.CUST_ID
+  Where
+  cust.SIU_CUST_YN ="""
 
-#실제로는 cuclcntt 로 세 테이블 합쳐지는 쿼리임. 변수명 귀찮아서 안 바꿈. 
-sql_cuclaim="""Select
+#YN  마지막만 =  에서 끝내주면 된다
+sql_cuclaim = """Select
   insurance_nullfix.claim.HOSP_CODE,
   insurance_nullfix.cust.AGE,
   insurance_nullfix.cntt.CNTT_YM,
@@ -49,6 +71,27 @@ sql_cuclaim="""Select
   insurance_nullfix.cntt.CNTT_RECP,
   insurance_nullfix.cntt.MNTH_INCM_AMT,
   insurance_nullfix.cntt.DISTANCE,
+  insurance_nullfix.cust.SEX,
+  insurance_nullfix.cust.RESI_COST,
+  insurance_nullfix.cust.RESI_TYPE_CODE,
+  insurance_nullfix.cust.FP_CAREER,
+  insurance_nullfix.cust.CUST_RGST,
+  insurance_nullfix.cust.CTPR,
+  insurance_nullfix.cust.OCCP_GRP1,
+  insurance_nullfix.cust.OCCP_GRP2,
+  insurance_nullfix.cust.TOTALPREM,
+  insurance_nullfix.cust.MINCRDT,
+  insurance_nullfix.cust.MAXCRDT,
+  insurance_nullfix.cust.WEDD_YN,
+  insurance_nullfix.cust.MATE_OCCP_GRP1,
+  insurance_nullfix.cust.MATE_OCCP_GRP2,
+  insurance_nullfix.cust.CHLD_CNT,
+  insurance_nullfix.cust.LTBN_CHLD_AGE,
+  insurance_nullfix.cust.MAX_PAYM_YM,
+  insurance_nullfix.cust.MAX_PRM,
+  insurance_nullfix.cust.CUST_INCM,
+  insurance_nullfix.cust.RCBASE_HSHD_INCM,
+  insurance_nullfix.cust.JPBASE_HSHD_INCM,
   insurance_nullfix.claim.ACCI_OCCP_GRP1,
   insurance_nullfix.claim.ACCI_OCCP_GRP2,
   insurance_nullfix.claim.CHANG_FP_YN,
@@ -93,20 +136,25 @@ From
   Where
   cust.SIU_CUST_YN = """
 
+#select+자동 컬럼선택 + from to end (마지막에 YN=  까지만 적어서 자동 카테고리 되게)
+
 def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우 단어 받아서 컬럼네임 배열로 출력. 
     sql=sql.upper()
     initial=initial.upper()
     end=end.upper()
     column_names=sql[sql.find(initial)+len(initial)+1 : sql.find(end)] #select 이후 띄어쓰기 하나 때문에 +1
-    column_names=column_names.replace(" ","").split(",")
+    column_names=column_names.replace(" ","").replace(dbname.upper()+'.',"").split(",") #혹시 SQL 컬럼네임에 DB이름 포함이면 빼자
     #print (column_names)
     #print len(column_names)
     return column_names
 
 def getdata(target,yn):
     yn=str(yn) #숫자로 넘어온거 문자로 바꿔서 더할수있게
-    sql=sql_cuclaim+yn
-    #sql=sql+' limit 100' #테스트용 10개만 뽑아볼때쓰는 코드
+    if target=="cucntt":
+        sql=sql_cucntt+yn
+    elif target=="cuclaim":
+        sql=sql_cuclaim+yn
+    #sql=sql+' limit 2' #테스트용 10개만 뽑아볼때쓰는 코드
     #print sql #쿼리 만들어진거 확인
     cur.execute(sql)
     return [list(a) for a in cur.fetchall()] #왜 tuple 로 받아오지? list로 못받아오나? list() 쓰면되는군
@@ -134,14 +182,11 @@ def allFloat(array):
         #print '\n printing data_type \n',data_type #첫줄에서 만든 데이터 타입
     return array
 
-def normalize(array,ifnormalize=1): #-0.5~+0.5
-    if ifnormalize:
-      array=numpy.array(array,dtype='float32')
-      for col_num in range(0,array.shape[1]):
+def normalize(array): #-0.5~+0.5
+    array=numpy.array(array,dtype='float32')
+    for col_num in range(0,array.shape[1]):
         array[:,col_num]=(array[:,col_num]-array[:,col_num].min(0))/array[:,col_num].ptp(0)-0.5
-      return array
-    else:
-      return array
+    return array
 
 def randomize(labels,dataset):
     permutation = numpy.random.permutation(labels.shape[0])
@@ -161,12 +206,16 @@ def dataDivide(labels,dataset,test_ratio=0.2): #일정비율로 테스트와 트
 def pickletest(pickle_name):
     with open(pickle_name,'rb') as g:
         data=pickle.load(g)
-        print data['test_cuclaim_label'][10]
-        print data['test_cuclaim_data'][10]
+        #print data['test_cuclaim_label'][10]
+        #print data['test_cuclaim_data'][10]
 
-def autoCategoricalIndex(array,n_category_limit=100): #numpy array 받음
+def autoCategoricalIndex(array,n_category_limit=100): #numpy array 받음. cat limit이 - 값(자기 컬럼수보다 기준이 작을때)이면 분류 안함. 
     #유니크 자료수가 100개 미만이면 categorical 로 분류해 [true, false, false,.... ] 로 만들어 내보낸다.
-    return numpy.array(unqCount(array)<n_category_limit)
+    if n_category_limit>0:
+      autocat=numpy.array(unqCount(array)<n_category_limit)
+    else : #0또는 그 아래 값일때 
+      autocat=numpy.zeros(array.shape[0]) #다 false 로 반환한다.
+    return autocat
 
 def unqCount(array):
     unq_count=[]
@@ -182,33 +231,31 @@ def showCategoricalLimit(array,total_variable_limit=0.01): #기본값으로 데�
 
     if total_variable_limit >1: #리밋에 0~1 값은 비율로 판단해 계산하고 1 넘는값은 몇개로 지정했다고 생각함. 
         limit=total_variable_limit
-        print '\nvariable limit : ',total_variable_limit
+        #print '\nvariable limit : ',total_variable_limit
     else:
         limit=total_variable_limit*array.shape[0]
-        print '\nvariable limit ratio : ',total_variable_limit*100,'%   ',total_variable_limit*array.shape[0]
+        #print '\nvariable limit ratio : ',total_variable_limit*100,'%   ',total_variable_limit*array.shape[0]
 
     n_total_variables=array.shape[1]
     if limit < n_total_variables:
-        raise NameError('받은 배열의 컬럼이 limit 개수보다 많아서 더미화를 진행할 수 없습니다')
+        #print('받은 배열의 컬럼이 limit 개수보다 많아서 더미화 하지 않습니다.')
+        return -1
 
     for i in range(0,unq_sorted.shape[0]):
         n_total_variables += unq_sorted[i]-1 #해당 변수를 dummylize 해서 추가된 변수개수를 포함하면 총 변수개수는 몇개가 되는가.
         if n_total_variables > limit: #총 데이터 라인수*지정비율 보다 변수 수가 많아질때
             #print '\n now total variables calculated : ', n_total_variables 
-            print 'unique items vector : ',unq_array
+            #print 'unique items vector : ',unq_array
             #print 'unique items sorted vector : ',unq_sorted
-            print 'you can dummylize ',i,'columns counted from smallest'
-            print 'dummylize 할 수 있는 컬럼중 가장 항목수가 많은 컬럼의 항목수 : ',unq_sorted[i-1]
+            #print 'you can dummylize ',i,'columns counted from smallest'
+            #print 'dummylize 할 수 있는 컬럼중 가장 항목수가 많은 컬럼의 항목수 : ',unq_sorted[i-1]
             #print 'Variable# sum expected after dummylize : ', n_total_variables-unq_sorted[i]
             return unq_sorted[i-1]+1 #가능한 가장 큰 값에 +1 함. 
 
-def dummylize(array,cat_index,sql,dummylize=1):
-    if dummylize==0:
-        print('dummylize cancelled. passing original array...')
-        cat_index=numpy.zeros(cat_index.shape[0])
+def dummylize(array,cat_index,sql):
     column_names=columnNames(sql) #더미화된 결과 컬럼이름 받기위해 sql 을 받아오기로 함. 
-    print '\nbefore dummylize, ',array.shape[1],' columns. ' 
-    print 'got index 5 columns',cat_index.shape[0]
+    #print '\nbefore dummylize, ',array.shape[1],' columns. ' 
+    #print 'got index 5 columns',cat_index.shape[0]
     i=0 # numpy 배열은 enumerate 사용불가라서 어쩔수없이.. 
     for cat_yn in cat_index:
         if cat_yn :
@@ -228,13 +275,13 @@ def dummylize(array,cat_index,sql,dummylize=1):
             column_names=numpy.delete(column_names,position,0) #컬럼네임도 똑같이 삭제
         i+=1
     #print(column_names)
-    print 'after dummylyze, ',array.shape[1],' columns.'
-    return column_names, array
+    #print 'after dummylyze, ',array.shape[1],' columns.'
+    return numpy.array(column_names), array
 
 def chkDistri(data, divide=10): #기본 값구간 10개로 나눔.  [총평균,총개수, 구간1평균,구간1개수, 구간2평균,구간2개수 ... ]
     data=numpy.array(data,dtype='float32')
-    print data.shape, 'will be divided into ',divide,' sections. ',1./divide,' for each sectins   *total: -0.5~ +0.5)'
-    print 'A warning    \'RuntimeWarning: Mean of empty slice\'    can appear if there is no data in specific section. \n but that\'s OK'
+    #print data.shape, 'will be divided into ',divide,' sections. ',1./divide,' for each sectins   *total: -0.5~ +0.5)'
+    #print 'A warning    \'RuntimeWarning: Mean of empty slice\'    can appear if there is no data in specific section. \n but that\'s OK'
     distri=numpy.zeros((data.shape[1],2*(divide+1))) #컬럼수,쪼갬수(평균,개수 2개씩이라 *2, 총평균/개수 포함이라 +1)
 
     for n_col in range(0,data.shape[1]): #컬럼별.
@@ -269,63 +316,99 @@ def chkDistri(data, divide=10): #기본 값구간 10개로 나눔.  [총평균,�
 
 
 try:
+
+
+
 #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
+    cucntt_y=numpy.array(allFloat(getdata("cucntt",1)),dtype="float32")
+    #print'cucntt_y volume : ',cucntt_y.shape
+    cucntt_n=numpy.array(allFloat(getdata("cucntt",0)),dtype="float32")
+    #print'cucntt_n volume : ',cucntt_n.shape
     cuclaim_y=numpy.array(allFloat(getdata("cuclaim",1)),dtype="float32")
-    print'cuclaim_y volume : ',cuclaim_y.shape
+    #print'cuclaim_y volume : ',cuclaim_y.shape
     cuclaim_n=numpy.array(allFloat(getdata("cuclaim",0)),dtype="float32")
-    print'cuclaim_n volume : ',cuclaim_n.shape
+    #print'cuclaim_n volume : ',cuclaim_n.shape
 
 
 #dummy화                 
+    cucntt =numpy.concatenate((cucntt_y,cucntt_n),0)#더미화 위해 잠시 테이블 합침
     cuclaim=numpy.concatenate((cuclaim_y,cuclaim_n),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
-    print 'after concatenate :', cuclaim.shape
     #아래는 자동으로 카테고리 컬럼이 뭔지 생성. 
-    cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit))
-    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim,ifdummy) #cucntt 가 필요가 없어서 더미화에 포함안되게 ifdummy 를 항상 0 으로 만들어뒀음. 
-    cuclaim=normalize(cuclaim,ifnormalize)
-    print 'cuclaim shape : ',cuclaim.shape
+    cucntt_cat_tf_index=autoCategoricalIndex(cucntt,showCategoricalLimit(cucntt,0)) #cucntt 는 언제나 더미화 안되게 하기.
+    cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit)) #값 크기에 따라 더미화 됨. 
+    cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt) 
+    cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim)
+    cucntt=normalize(cucntt) #합친김에 normalize
+    cuclaim=normalize(cuclaim)
+    #print 'cucntt shape : ',cucntt.shape
+    print 'shape : ',cuclaim.shape #이름은 cuclaim 이지만 내용은 계속 바뀜.  
+    cucntt_y=cucntt[:cucntt_y.shape[0]] #합쳤던 테이블 분리
+    cucntt_n=cucntt[cucntt_y.shape[0]:]
     cuclaim_y=cuclaim[:cuclaim_y.shape[0]]
     cuclaim_n=cuclaim[cuclaim_y.shape[0]:]
-    print '\n','after normalize & dummylize'
-    print'cuclaim_y volume : ',cuclaim_y.shape
-    print'cuclaim_n volume : ',cuclaim_n.shape,'\n'
-
-    del cuclaim #메모리를 위해. 
+    del cucntt, cuclaim #메모리를 위해. 
 
 #라벨링한뒤에 class들 합치기
+    cucntt_label=numpy.concatenate((numpy.zeros(cucntt_y.shape[0])+1,numpy.zeros(cucntt_n.shape[0])),axis=0)
+    cucntt_data=numpy.concatenate((cucntt_y,cucntt_n),axis=0)
+    #print'cucntt label, data : ',cucntt_label.shape, cucntt_data.shape
     cuclaim_label=numpy.concatenate((numpy.zeros(cuclaim_y.shape[0])+1,numpy.zeros(cuclaim_n.shape[0])),axis=0)
     cuclaim_data=numpy.concatenate((cuclaim_y,cuclaim_n),axis=0)
     #print'cuclaim label, data : ',cuclaim_label.shape, cuclaim_data.shape
 
-#위치 섞기
-    cuclaim_label,cuclaim_data=randomize(cuclaim_label,cuclaim_data,)
-    #print(cuclaim_label)
 
-#test / train set 분리
-    #print'test_cucntt_label , train_cucntt_label shape : ',test_cucntt_label.shape,train_cucntt_label.shape
-    test_cuclaim_label, test_cuclaim_data, train_cuclaim_label, train_cuclaim_data = dataDivide(cuclaim_label,cuclaim_data)
-    #print'test_cuclaim_label , train_cuclaim_label shape : ',test_cuclaim_label.shape,train_cuclaim_label.shape
+#전체를 받은 후 . 변수분석 시작 . cucntt는 걍 코드고치기 싫어서 냅둠. 무시하고 cuclaim 만 쓴다보면 됨. 
+    #print cuclaim_cnames #어떤 배열을 받는지 확인하려는 디버깅코드
+    #print cucntt_label
+    for i, delcol in enumerate(cuclaim_cnames): #컬럼이름을 순환하면서
+        data_delcol = numpy.delete(cuclaim_data,i,1) #컬럼방향으로 i번째 컬럼 삭제.
+        label_delcol = numpy.delete(cuclaim_label.T,i,0).T #1차원배열이라 행으로 삭제후 되돌림
+        cnames_delcol = numpy.delete(cuclaim_cnames.T,i,0).T
 
-#train set distribution analysis [전체평균,전체개수,구간1평균, 구간1개수, 구간2평균, 구간2개수 ... ]
-    train_cuclaim_distri = chkDistri(train_cuclaim_data)
+        #filename : (저장경로/)rand00 outdel0 dummy000 00 del-popcolumn.pickle
+        pickle_name = db_feature+' outdel'+str(ifoutdel)+' dummy'+str(afterdummy_variables_limit)+' tryno'+str(tryno)+' delcol-'+delcol.strip()+'.pickle'
 
-#picklelize
-    f = open(pickle_name,'wb')
-    save={
-        'test_cuclaim_label' : test_cuclaim_label,
-        'test_cuclaim_data' : test_cuclaim_data,
-        'train_cuclaim_label' : train_cuclaim_label,
-        'train_cuclaim_data' : train_cuclaim_data,
-        'cuclaim_column_names' : cuclaim_cnames,
-        'train_cuclaim_distri' : train_cuclaim_distri
-        }
-    pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
-    f.close()
-    print '\npicklize finished.  filename :',pickle_name,' Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte'
-    pickletest(pickle_name)
+    #위치 섞기
+        cucntt_label, cucntt_data=randomize(cucntt_label,cucntt_data)
+        label_delcol,data_delcol=randomize(label_delcol,data_delcol)
+        #print(cuclaim_label)
 
+        #test / train set 분리
+        test_cucntt_label, test_cucntt_data, train_cucntt_label, train_cucntt_data = dataDivide(cucntt_label,cucntt_data)
+        #print'test_cucntt_label , train_cucntt_label shape : ',test_cucntt_label.shape,train_cucntt_label.shape
+        test_cuclaim_label, test_cuclaim_data, train_cuclaim_label, train_cuclaim_data = dataDivide(label_delcol,data_delcol) #여기까지만 수정하고 나머지 변수명은 claim으로 냅둠귀찮
+        #print'test_cuclaim_label , train_cuclaim_label shape : ',test_cuclaim_label.shape,train_cuclaim_label.shape
+
+    #train set distribution analysis [전체평균,전체개수,구간1평균, 구간1개수, 구간2평균, 구간2개수 ... ]
+        train_cucntt_distri=0 #off 시에도 동작하게 하려고 일단 변수는 생성.
+        train_cuclaim_distri=0
+        train_cucntt_distri = chkDistri(train_cucntt_data)
+        train_cuclaim_distri = chkDistri(train_cuclaim_data)
+
+    #picklelize
+        f = open(pickle_name,'wb')
+        save={
+            'test_cucntt_label' : test_cucntt_label,
+            'test_cucntt_data' : test_cucntt_data,
+            'train_cucntt_label' : train_cucntt_label,
+            'train_cucntt_data' : train_cucntt_data,
+            'cucntt_column_names' : cucntt_cnames,
+            'train_cucntt_distri' : train_cucntt_distri,
+
+            'test_cuclaim_label' : test_cuclaim_label,
+            'test_cuclaim_data' : test_cuclaim_data,
+            'train_cuclaim_label' : train_cuclaim_label,
+            'train_cuclaim_data' : train_cuclaim_data,
+            'cuclaim_column_names' : cuclaim_cnames,
+            'train_cuclaim_distri' : train_cuclaim_distri
+            }
+        pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
+        f.close()
+        print i+1,'/',len(cuclaim_cnames),' filename :',pickle_name,' Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte ....  picklize finished. '
+        #print 'picklefile,'
+        #pickletest(pickle_name)
 
 finally:
-    print("closing")
+    #print("closing DB")
     cur.close()
     mydb.close()

@@ -12,8 +12,9 @@ def corrSpearman(dim2_array): #한방에 하니 메모리가 수십기가 필요
 		print 'processing rows : ', col,'/',n_col #시간이 많이 걸리니까 진행도 표시. 
 		for col2 in range(0,n_col):
 			corrsp_result[col,col2] , corrsp_pvalue[col,col2] = scipy.stats.spearmanr(dim2_array[:,col],dim2_array[:,col2])
-	print'spearman -finished.\n'
-			#print n_col,n_col2,' spearmanr : ',scipy.stats.spearmanr(f[:,n_col],f[:,n_col2])
+			# print col,col2,' spearmanr : ',scipy.stats.spearmanr(f[:,col],f[:,col2]) # 확인
+	print'spearman -finished.\n' 
+
 	#print corrsp_result
 	#print corrsp_pvalue
 	return corrsp_result, corrsp_pvalue
@@ -24,14 +25,14 @@ def corrPearson(dim2_array): #2차원배열 아니면 오류남.
 	result = numpy.corrcoef(dim2_array.T)
 	return result #리턴 하나
 
-a=numpy.matrix([0,0,0,0,0,0,0,0,1,1])
-b=numpy.matrix([1,2,3,1,2,3,1,2,3,1])
-c=numpy.matrix([1,2,3,4,1,2,3,4,1,2])
-d=numpy.matrix([1,2,3,4,5,1,2,3,4,5])
-e=numpy.matrix([1,2,3,4,5,6,7,8,9,10])
-f=numpy.array(numpy.concatenate((a,b,c,d,e),0))
+a=numpy.matrix([0,1,2,3,4,5,6,7,8,9]) #컬럼데이터 입력
+b=numpy.matrix([100,111,122,133,144,155,166,177,188,199])
+c=numpy.matrix([11001,12002,13003,14004,15005,16006,17007,18008,19009,20010])
+d=numpy.matrix([3,103,10004,4,5,1,2,3,4,5])
+e=numpy.matrix([4,104,10005,4,5,6,7,8,9,10])
+f=numpy.array(numpy.concatenate((a,b,c,d,e),0)).T #컬럼별로 정리되지 않은 raw dataset 제작 
+print(f.shape)
 print(f)
-print(f.T)
 
 pearson_result=corrPearson(f)
 spearman_result , spearman_pvalue = corrSpearman(f)

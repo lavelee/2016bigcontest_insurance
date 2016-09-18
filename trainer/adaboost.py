@@ -4,7 +4,7 @@
 #그후에 또 dot.exe 존재하는 경로를 찾아서  윈도우 환경변수 path에 등록.
 #path 등록후엔 재부팅 필수. 재부팅전엔 추가 안된걸로 나옴.
 #너무 커서 pdf 가로길이가 일정수준 넘으면 뷰어가 포기해서 희게나옴. 그럴땐 max_depth제한 지정+컬럼명 길경우 rotate=true
-from sklearn.ensemble import RandomForestClassifier as rf
+from sklearn.ensemble import AdaBoostClassifier as abc
 from sklearn.externals.six import StringIO
 import pydotplus
 import pickle
@@ -32,7 +32,7 @@ def f1Score(predictions, labels):
     print 'f1_score =',f1_score
     return f1_score
 
-with open('clcucntt_rand01.pickle','rb') as f:
+with open('clcucntt_randfix01outdel.pickle','rb') as f:
     data=pickle.load(f)
 train_label=data['train_cuclaim_label']
 train_data =data['train_cuclaim_data']
@@ -41,10 +41,11 @@ test_data  =data['test_cuclaim_data']
 column_names=data['cuclaim_column_names']
 del data
 
-trainer = rf(n_estimators=100).fit(train_data,train_label)
+trainer = abc(n_estimators=100,learning_rate=0.9).fit(train_data,train_label)
 tr_prediction = trainer.predict(test_data)
 f1Score(tr_prediction,test_label)
 
+"""
 dot_data=StringIO()
 tree.export_graphviz(trainer,
                      out_file=dot_data,
@@ -55,3 +56,4 @@ tree.export_graphviz(trainer,
                      )
 graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
 graph.write_pdf("test.pdf")
+"""
