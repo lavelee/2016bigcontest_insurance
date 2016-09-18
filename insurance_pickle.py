@@ -9,17 +9,18 @@ import os
 import pandas
 
 #서버접속 설정과 한글사용위한 인코딩 설정
-mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix')
+mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix') #쿼리에 DB 명 지정되어있으면 이거 바꿔도 적용 안됨.
 cur=mydb.cursor()
 mydb.set_character_set('utf8')
 cur.execute('SET NAMES utf8;')
 cur.execute('SET CHARACTER SET utf8;')
 cur.execute('SET character_set_connection=utf8;')
 
+ifnormalize=0
 ifdummy=0
-afterdummy_variables_limit=0.01 #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
+afterdummy_variables_limit=100 #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
                                             #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
-pickle_name='clcucntt_rand01.pickle' #만들어진 피클 이름. picklize 에서 쓴다. 
+pickle_name='cucntt_randfix02outdel.pickle' #만들어진 피클 이름. picklize 에서 쓴다. 
 
 
 #query . 끝에 Y/N 은 제외했다 나중에 붙임.
@@ -38,40 +39,47 @@ sql_cucntt="""Select
   
 #실제로는 cuclcntt 로 세 테이블 합쳐지는 쿼리임. 변수명 귀찮아서 안 바꿈. 
 sql_cuclaim="""Select
-insurance_nullfix.claim.ACCI_OCCP_GRP1,
-insurance_nullfix.claim.ACCI_OCCP_GRP2,
-insurance_nullfix.claim.CHANG_FP_YN,
-insurance_nullfix.claim.RECP_DATE,
-insurance_nullfix.claim.ORIG_RESN_DATE,
-insurance_nullfix.claim.RESN_DATE,
-insurance_nullfix.claim.CRNT_PROG_DVSN,
-insurance_nullfix.claim.ACCI_DVSN,
-insurance_nullfix.claim.CAUS_CODE,
-insurance_nullfix.claim.CAUS_CODE_DTAL,
-insurance_nullfix.claim.DMND_RESN_CODE,
-insurance_nullfix.claim.DMND_RSCD_SQNO,
-insurance_nullfix.claim.HOSP_OTPA_STDT,
-insurance_nullfix.claim.HOSP_OTPA_ENDT,
-insurance_nullfix.claim.RESL_CD1,
-insurance_nullfix.claim.VLID_HOSP_OTDA,
-insurance_nullfix.claim.HOUSE_HOSP_DIST,
-insurance_nullfix.claim.HOSP_CODE,
-insurance_nullfix.claim.ACCI_HOSP_ADDR,
-insurance_nullfix.claim.HOSP_SPEC_DVSN,
-insurance_nullfix.claim.CHME_LICE_NO,
-insurance_nullfix.claim.PAYM_DATE,
-insurance_nullfix.claim.DMND_AMT,
-insurance_nullfix.claim.PAYM_AMT,
-insurance_nullfix.claim.PMMI_DLNG_YN,
-insurance_nullfix.claim.SELF_CHAM,
-insurance_nullfix.claim.NON_PAY,
-insurance_nullfix.claim.TAMT_SFCA,
-insurance_nullfix.claim.PATT_CHRG_TOTA,
-insurance_nullfix.claim.DSCT_AMT,
-insurance_nullfix.claim.COUNT_TRMT_ITEM,
-insurance_nullfix.claim.DCAF_CMPS_XCPA,
-insurance_nullfix.claim.NON_PAY_RATIO,
-insurance_nullfix.claim.HEED_HOSP_YN
+insurance_nullfix.cntt.CUST_ROLE,
+insurance_nullfix.cntt.IRKD_CODE_DTAL,
+insurance_nullfix.cntt.IRKD_CODE_ITEM,
+insurance_nullfix.cntt.GOOD_CLSF_CDNM,
+insurance_nullfix.cntt.CNTT_YM,
+insurance_nullfix.cntt.CLLT_FP_PRNO,
+insurance_nullfix.cntt.REAL_PAYM_TERM,
+insurance_nullfix.cntt.SALE_CHNL_CODE,
+insurance_nullfix.cntt.CNTT_STAT_CODE,
+insurance_nullfix.cntt.EXPR_YM,
+insurance_nullfix.cntt.EXTN_YM,
+insurance_nullfix.cntt.LAPS_YM,
+insurance_nullfix.cntt.PAYM_CYCL_CODE,
+insurance_nullfix.cntt.MAIN_INSR_AMT,
+insurance_nullfix.cntt.SUM_ORIG_PREM,
+insurance_nullfix.cntt.RECP_PUBL,
+insurance_nullfix.cntt.CNTT_RECP,
+insurance_nullfix.cntt.MNTH_INCM_AMT,
+insurance_nullfix.cntt.DISTANCE,
+insurance_nullfix.cust.SEX,
+insurance_nullfix.cust.AGE,
+insurance_nullfix.cust.RESI_COST,
+insurance_nullfix.cust.RESI_TYPE_CODE,
+insurance_nullfix.cust.FP_CAREER,
+insurance_nullfix.cust.CUST_RGST,
+insurance_nullfix.cust.CTPR,
+insurance_nullfix.cust.OCCP_GRP1,
+insurance_nullfix.cust.OCCP_GRP2,
+insurance_nullfix.cust.TOTALPREM,
+insurance_nullfix.cust.MINCRDT,
+insurance_nullfix.cust.MAXCRDT,
+insurance_nullfix.cust.WEDD_YN,
+insurance_nullfix.cust.MATE_OCCP_GRP1,
+insurance_nullfix.cust.MATE_OCCP_GRP2,
+insurance_nullfix.cust.CHLD_CNT,
+insurance_nullfix.cust.LTBN_CHLD_AGE,
+insurance_nullfix.cust.MAX_PAYM_YM,
+insurance_nullfix.cust.MAX_PRM,
+insurance_nullfix.cust.CUST_INCM,
+insurance_nullfix.cust.RCBASE_HSHD_INCM,
+insurance_nullfix.cust.JPBASE_HSHD_INCM
 From
         insurance_nullfix.claim Left Join insurance_nullfix.cust 
         On insurance_nullfix.claim.CUST_ID = insurance_nullfix.cust.CUST_ID
@@ -79,7 +87,7 @@ From
         On insurance_nullfix.claim.POLY_NO = insurance_nullfix.cntt.POLY_NO And
         insurance_nullfix.cntt.CUST_ID = insurance_nullfix.claim.CUST_ID
         where
-        cust.SIU_CUST_YN =  """
+        cust.SIU_CUST_YN =   """
 
 def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우 단어 받아서 컬럼네임 배열로 출력. 
     sql=sql.upper()
@@ -125,11 +133,14 @@ def allFloat(array):
         #print '\n printing data_type \n',data_type #첫줄에서 만든 데이터 타입
     return array
 
-def normalize(array): #-0.5~+0.5
-    array=numpy.array(array,dtype='float32')
-    for col_num in range(0,array.shape[1]):
+def normalize(array,ifnormalize=1): #-0.5~+0.5
+    if ifnormalize:
+      array=numpy.array(array,dtype='float32')
+      for col_num in range(0,array.shape[1]):
         array[:,col_num]=(array[:,col_num]-array[:,col_num].min(0))/array[:,col_num].ptp(0)-0.5
-    return array
+      return array
+    else:
+      return array
 
 def randomize(labels,dataset):
     permutation = numpy.random.permutation(labels.shape[0])
@@ -277,8 +288,8 @@ try:
     cuclaim_cat_tf_index=autoCategoricalIndex(cuclaim,showCategoricalLimit(cuclaim,afterdummy_variables_limit))
     cucntt_cnames, cucntt  =dummylize(cucntt , cucntt_cat_tf_index , sql_cucntt,0) #더미화 실행, 안하려면 이 줄 삭제가 아니라 옵션에 ,0 넣기 
     cuclaim_cnames, cuclaim=dummylize(cuclaim, cuclaim_cat_tf_index, sql_cuclaim,ifdummy) #cucntt 가 필요가 없어서 더미화에 포함안되게 ifdummy 를 항상 0 으로 만들어뒀음. 
-    cucntt=normalize(cucntt) #합친김에 normalize
-    cuclaim=normalize(cuclaim)
+    cucntt=normalize(cucntt,1) #합친김에 normalize
+    cuclaim=normalize(cuclaim,ifnormalize)
     print '\ncucntt shape : ',cucntt.shape
     print 'cuclaim shape : ',cuclaim.shape
     cucntt_y=cucntt[:cucntt_y.shape[0]] #합쳤던 테이블 분리
