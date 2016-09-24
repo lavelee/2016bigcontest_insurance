@@ -26,7 +26,7 @@ test_ratio=0.2 #데이터에서 테스트셋의 비율
 
 #혹시 외부변수가 있다면 외부변수 우선 설정. 
 try :
-    dbname = sys.argv[1] #sql 파일의 이름. nullfix01.sql 에서 .sql 떼고 nullfix01
+    dbname = sys.argv[1] #sql 파일의 경로포함 이름. 경로/nullfix01.sql 에서 .sql 떼고 경로/nullfix01
     ifoutdel = int(sys.argv[2]) #0 또는 1
     afterdummy_variables_limit = int(sys.argv[3]) #0, 100, 1000
     tryno = int(sys.argv[4]) #몇번째 제작중인 picklefile 인지 #0,1,2,3,4...
@@ -324,10 +324,10 @@ try:
 #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 변경
     get_y=numpy.array(allFloat(getdata(1)),dtype='float32')
     print'original get_y shape : ',get_y.shape
-    print get_y
+    # print get_y
     get_n=numpy.array(allFloat(getdata(0)),dtype='float32')
     print'original get_n shape : ',get_n.shape
-    print get_n
+    # print get_n
 
 #dummy,normalize. SQL에서 클래스별 자료를 따로 받아왔지만 노멀라이즈는 합쳐서 해야하고, 더미도 유니크 항목 기준이기때문에 합쳤다 다시나눔.
 #내부적으로 합쳐서 노멀, 더미 후에 다시 나눠서 반환함. 

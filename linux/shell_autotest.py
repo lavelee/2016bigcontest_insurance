@@ -21,8 +21,8 @@ folder = '/home/rbl/Documents/TensorFlow/insurance/pickle_files/' #실제 실행
 subpy = '/home/rbl/Documents/TensorFlow/insurance/Insurance_model.py' #쉘로 실행할 py 파일의 위치
 #folder = '/home/rbl/Documents/TensorFlow/insurance/pickle_files_test/' #디버깅용으로 파일 2개만 넣어서 돌려봄
 #변인수를 변수로 두는것은 총 개수를 동적으로 계산해 몇개중 몇번째것이 진행중인지 표시하기 위해서임.
-node_var=[10] # 노드 변인수. 변인을 이 값에 연동시켰으므로 변인수 바뀌면 다시 만들어야 함. 0부터 세지 않음.
-Lrate_var=[0.5] # 러닝레이트 변인수
+node_var=[10 100 500] # 노드 변인.
+Lrate_var=[0.5] # 러닝레이트 변인.
 n_test_per_var=5 # 한 조건세트당 몇번씩 수행
 
 
