@@ -32,13 +32,13 @@ def f1Score(predictions, labels):
     print 'f1_score =',f1_score
     return f1_score
 
-with open('clcntt_cu_randfix01.pickle','rb') as f:
+with open('clcntt_randfix01.pickle','rb') as f:
     data=pickle.load(f)
-train_label=data['train_cuclaim_label']
-train_data =data['train_cuclaim_data']
-test_label =data['test_cuclaim_label']
-test_data  =data['test_cuclaim_data']
-column_names=data['cuclaim_column_names']
+train_label=data['train_label']
+train_data =data['train_data']
+test_label =data['test_label']
+test_data  =data['test_data']
+column_names=data['col_names']
 del data
 
 trainer = rf(n_estimators=100).fit(train_data,train_label)

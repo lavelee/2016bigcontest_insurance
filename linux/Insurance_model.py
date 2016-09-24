@@ -32,12 +32,12 @@ excel_name=resultname+'.xlsx' #확장자만 바꿔줌
 
 with open(pickle_file, 'rb') as f:
   save = pickle.load(f)
-  test_labels = save['test_cuclaim_label']
-  test_dataset = save['test_cuclaim_data']
-  train_labels = save['train_cuclaim_label']
-  train_dataset = save['train_cuclaim_data']
-  column_names = save['cuclaim_column_names']
-  train_distri = save['train_cuclaim_distri']
+  test_labels = save['test_label']
+  test_dataset = save['test_data']
+  train_labels = save['train_label']
+  train_dataset = save['train_data']
+  column_names = save['col_names']
+  train_distri = save['train_distri']
 del save  #to free up memory
 
 

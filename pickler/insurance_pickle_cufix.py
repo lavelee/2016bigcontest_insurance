@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #코드내에 한글로 된 경로가 있을때 위 인코딩줄 빼면 세이브가 안되어 실행되지 않는다. 
+#test/train 에 동일한 cust_id 가 섞이는 문제를 SQL 쿼리와 함께 해결함. 하지만 블럭을 나누는 그 한칸은 중복되는 상태. 
 
 import MySQLdb
 import datetime
@@ -9,7 +10,7 @@ import os, sys
 import pandas
 
 #서버접속 설정과 한글사용위한 인코딩 설정
-mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix') #쿼리에 DB 명 지정되어있으면 이거 바꿔도 적용 안됨.
+mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance_nullfix') #쿼리에 DB명 지정되어있으면 이거 바꿔도 적용 안됨.
 cur=mydb.cursor()
 mydb.set_character_set('utf8')
 cur.execute('SET NAMES utf8;')
@@ -18,9 +19,9 @@ cur.execute('SET character_set_connection=utf8;')
 
 ifnormalize=1
 afterdummy_variables_limit=0 #고유항목수 N개(N>1) , N의 비율로(0~1값) dummy 화 할지 결정. 
-                                            #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
+                                        #더미화로 추가될 컬럼수를 의미(항목 몇개이하~가 아님).   더미화 안된 컬럼+더미화 컬럼은 이 숫자보다 클수 있음.  
 pickle_name='clcntt_randfix01.pickle' #만들어진 피클 이름. picklize 에서 쓴다. 
-
+test_ratio=0.2 #데이터에서 테스트셋의 비율
 
 #혹시 외부변수가 있다면 외부변수 우선 설정. 
 try :
@@ -38,71 +39,91 @@ except IndexError :
 
 
 #query . 끝에 Y/N 은 제외했다 나중에 붙임.
-sql_input="""Select
-  insurance_nullfix.claim.HOSP_CODE,
-  insurance_nullfix.cust.AGE,
-  insurance_nullfix.cntt.CNTT_YM,
-  insurance_nullfix.cntt.CUST_ROLE,
-  insurance_nullfix.cntt.IRKD_CODE_DTAL,
-  insurance_nullfix.cntt.IRKD_CODE_ITEM,
-  insurance_nullfix.cntt.GOOD_CLSF_CDNM,
-  insurance_nullfix.cntt.CLLT_FP_PRNO,
-  insurance_nullfix.cntt.REAL_PAYM_TERM,
-  insurance_nullfix.cntt.SALE_CHNL_CODE,
-  insurance_nullfix.cntt.CNTT_STAT_CODE,
-  insurance_nullfix.cntt.EXPR_YM,
-  insurance_nullfix.cntt.EXTN_YM,
-  insurance_nullfix.cntt.LAPS_YM,
-  insurance_nullfix.cntt.PAYM_CYCL_CODE,
-  insurance_nullfix.cntt.MAIN_INSR_AMT,
-  insurance_nullfix.cntt.SUM_ORIG_PREM,
-  insurance_nullfix.cntt.RECP_PUBL,
-  insurance_nullfix.cntt.CNTT_RECP,
-  insurance_nullfix.cntt.MNTH_INCM_AMT,
-  insurance_nullfix.cntt.DISTANCE,
-  insurance_nullfix.claim.ACCI_OCCP_GRP1,
-  insurance_nullfix.claim.ACCI_OCCP_GRP2,
-  insurance_nullfix.claim.CHANG_FP_YN,
-  insurance_nullfix.claim.RECP_DATE,
-  insurance_nullfix.claim.ORIG_RESN_DATE,
-  insurance_nullfix.claim.RESN_DATE,
-  insurance_nullfix.claim.CRNT_PROG_DVSN,
-  insurance_nullfix.claim.ACCI_DVSN,
-  insurance_nullfix.claim.CAUS_CODE,
-  insurance_nullfix.claim.CAUS_CODE_DTAL,
-  insurance_nullfix.claim.DMND_RESN_CODE,
-  insurance_nullfix.claim.DMND_RSCD_SQNO,
-  insurance_nullfix.claim.HOSP_OTPA_STDT,
-  insurance_nullfix.claim.HOSP_OTPA_ENDT,
-  insurance_nullfix.claim.RESL_CD1,
-  insurance_nullfix.claim.HEED_HOSP_YN,
-  insurance_nullfix.claim.NON_PAY_RATIO,
-  insurance_nullfix.claim.DCAF_CMPS_XCPA,
-  insurance_nullfix.claim.COUNT_TRMT_ITEM,
-  insurance_nullfix.claim.DSCT_AMT,
-  insurance_nullfix.claim.PATT_CHRG_TOTA,
-  insurance_nullfix.claim.TAMT_SFCA,
-  insurance_nullfix.claim.NON_PAY,
-  insurance_nullfix.claim.SELF_CHAM,
-  insurance_nullfix.claim.PMMI_DLNG_YN,
-  insurance_nullfix.claim.PAYM_AMT,
-  insurance_nullfix.claim.DMND_AMT,
-  insurance_nullfix.claim.PAYM_DATE,
-  insurance_nullfix.claim.CHME_LICE_NO,
-  insurance_nullfix.claim.HOSP_SPEC_DVSN,
-  insurance_nullfix.claim.ACCI_HOSP_ADDR,
-  insurance_nullfix.claim.HOUSE_HOSP_DIST,
-  insurance_nullfix.claim.VLID_HOSP_OTDA
-From
-  insurance_nullfix.claim Left Join
-  insurance_nullfix.cust
-    On insurance_nullfix.claim.CUST_ID = insurance_nullfix.cust.CUST_ID
-  Left Join
-  insurance_nullfix.cntt
-    On insurance_nullfix.claim.POLY_NO = insurance_nullfix.cntt.POLY_NO And
-    insurance_nullfix.cntt.CUST_ID = insurance_nullfix.claim.CUST_ID
-  Where
-  cust.SIU_CUST_YN = """
+sql_input=""" Select
+   cust_part.cust_id,
+   cust_part.AGE,
+   cust_part.SEX,
+   cust_part.RESI_COST,
+   cust_part.RESI_TYPE_CODE,
+   cust_part.FP_CAREER,
+   cust_part.CUST_RGST,
+   cust_part.CTPR,
+   cust_part.OCCP_GRP1,
+   cust_part.OCCP_GRP2,
+   cust_part.TOTALPREM,
+   cust_part.MINCRDT,
+   cust_part.MAXCRDT,
+   cust_part.WEDD_YN,
+   cust_part.MATE_OCCP_GRP1,
+   cust_part.MATE_OCCP_GRP2,
+   cust_part.CHLD_CNT,
+   cust_part.LTBN_CHLD_AGE,
+   cust_part.MAX_PAYM_YM,
+   cust_part.MAX_PRM,
+   cust_part.CUST_INCM,
+   cust_part.RCBASE_HSHD_INCM,
+   cust_part.JPBASE_HSHD_INCM,
+   insurance_nullfix.cntt.CNTT_YM,
+   insurance_nullfix.cntt.CUST_ROLE,
+   insurance_nullfix.cntt.IRKD_CODE_DTAL,
+   insurance_nullfix.cntt.IRKD_CODE_ITEM,
+   insurance_nullfix.cntt.GOOD_CLSF_CDNM,
+   insurance_nullfix.cntt.CLLT_FP_PRNO,
+   insurance_nullfix.cntt.REAL_PAYM_TERM,
+   insurance_nullfix.cntt.SALE_CHNL_CODE,
+   insurance_nullfix.cntt.CNTT_STAT_CODE,
+   insurance_nullfix.cntt.EXPR_YM,
+   insurance_nullfix.cntt.EXTN_YM,
+   insurance_nullfix.cntt.LAPS_YM,
+   insurance_nullfix.cntt.PAYM_CYCL_CODE,
+   insurance_nullfix.cntt.MAIN_INSR_AMT,
+   insurance_nullfix.cntt.SUM_ORIG_PREM,
+   insurance_nullfix.cntt.RECP_PUBL,
+   insurance_nullfix.cntt.CNTT_RECP,
+   insurance_nullfix.cntt.MNTH_INCM_AMT,
+   insurance_nullfix.cntt.DISTANCE,
+   insurance_nullfix.claim.HOSP_CODE,
+   insurance_nullfix.claim.ACCI_OCCP_GRP1,
+   insurance_nullfix.claim.ACCI_OCCP_GRP2,
+   insurance_nullfix.claim.CHANG_FP_YN,
+   insurance_nullfix.claim.RECP_DATE,
+   insurance_nullfix.claim.ORIG_RESN_DATE,
+   insurance_nullfix.claim.RESN_DATE,
+   insurance_nullfix.claim.CRNT_PROG_DVSN,
+   insurance_nullfix.claim.ACCI_DVSN,
+   insurance_nullfix.claim.CAUS_CODE,
+   insurance_nullfix.claim.CAUS_CODE_DTAL,
+   insurance_nullfix.claim.DMND_RESN_CODE,
+   insurance_nullfix.claim.DMND_RSCD_SQNO,
+   insurance_nullfix.claim.HOSP_OTPA_STDT,
+   insurance_nullfix.claim.HOSP_OTPA_ENDT,
+   insurance_nullfix.claim.RESL_CD1,
+   insurance_nullfix.claim.HEED_HOSP_YN,
+   insurance_nullfix.claim.NON_PAY_RATIO,
+   insurance_nullfix.claim.DCAF_CMPS_XCPA,
+   insurance_nullfix.claim.COUNT_TRMT_ITEM,
+   insurance_nullfix.claim.DSCT_AMT,
+   insurance_nullfix.claim.PATT_CHRG_TOTA,
+   insurance_nullfix.claim.TAMT_SFCA,
+   insurance_nullfix.claim.NON_PAY,
+   insurance_nullfix.claim.SELF_CHAM,
+   insurance_nullfix.claim.PMMI_DLNG_YN,
+   insurance_nullfix.claim.PAYM_AMT,
+   insurance_nullfix.claim.DMND_AMT,
+   insurance_nullfix.claim.PAYM_DATE,
+   insurance_nullfix.claim.CHME_LICE_NO,
+   insurance_nullfix.claim.HOSP_SPEC_DVSN,
+   insurance_nullfix.claim.ACCI_HOSP_ADDR,
+   insurance_nullfix.claim.HOUSE_HOSP_DIST,
+   insurance_nullfix.claim.VLID_HOSP_OTDA
+  From
+    claim inner Join
+          (Select cust.* From cust Where cust.SIU_CUST_YN = %d Order By  rand()) as cust_part
+      On cust_part.CUST_ID = claim.CUST_ID
+    Left Join
+    insurance_nullfix.cntt
+      On insurance_nullfix.claim.POLY_NO = insurance_nullfix.cntt.POLY_NO And
+      insurance_nullfix.cntt.CUST_ID = insurance_nullfix.claim.CUST_ID """
 
 
 def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우 단어 받아서 컬럼네임 배열로 출력. 
@@ -116,8 +137,8 @@ def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우
     return column_names
 
 def getdata(yn):
-    yn=str(yn) #숫자로 넘어온거 문자로 바꿔서 더할수있게
-    sql=sql_input+yn
+    # yn=str(yn) #원래는 텍스트+텍스트라 str 변환이었지만 %d 에 대입위해 숫자로 들어온거 냅둠.
+    sql=sql_input%yn
     #sql=sql+' limit 100' #테스트용 10개만 뽑아볼때쓰는 코드
     #print sql #쿼리 만들어진거 확인
     cur.execute(sql)
@@ -161,14 +182,11 @@ def randomize(labels,dataset):
     shuffled_labels = labels[permutation]
     return shuffled_labels, shuffled_dataset
 
-def dataDivide(labels,dataset,test_ratio=0.2): #일정비율로 테스트와 트레인셋을 나눔
-    divide_position=int(labels.shape[0]*test_ratio)
-    #print 'divide_position : ',divide_position
-    test_labels = labels[:divide_position]
-    test_dataset= dataset[:divide_position]
-    train_labels = labels[divide_position:]
-    train_dataset = dataset[divide_position:]
-    return test_labels, test_dataset, train_labels, train_dataset
+def dataDivide(dataset,test_ratio): #일정비율로 테스트와 트레인셋을 나눔
+    divide_position=int(dataset.shape[0]*test_ratio)
+    test= dataset[:divide_position]
+    train = dataset[divide_position:]
+    return test, train
 
 def pickletest(pickle_name):
     with open(pickle_name,'rb') as g:
@@ -226,7 +244,7 @@ def dummylize(array,cat_index,sql,dummylize=1):
         cat_index=numpy.zeros(cat_index.shape[0])
     column_names=columnNames(sql) #더미화된 결과 컬럼이름 받기위해 sql 을 받아오기로 함. 
     print '\nbefore dummylize, ',array.shape[1],' columns. ' 
-    print 'got index ',cat_index.shape[0],'columns'
+    # print 'got index ',cat_index.shape[0],'columns'
     i=0 # numpy 배열은 enumerate 사용불가라서 어쩔수없이.. 
     for cat_yn in cat_index:
         if cat_yn :
@@ -246,55 +264,44 @@ def dummylize(array,cat_index,sql,dummylize=1):
             column_names=numpy.delete(column_names,position,0) #컬럼네임도 똑같이 삭제
         i+=1
     #print(column_names)
-    print 'after dummylyze, ',array.shape[1],' columns.'
+    # print 'after dummylyze, ',array.shape[1],' columns.'
     return column_names, array
 
 def chkDistri(data, divide=10): #기본 값구간 10개로 나눔.  [총평균,총개수, 구간1평균,구간1개수, 구간2평균,구간2개수 ... ]
     data=numpy.array(data,dtype='float32')
     print data.shape, 'will be divided into ',divide,' sections. ',1./divide,' for each sectins   *total: -0.5~ +0.5)'
-    print 'A warning    \'RuntimeWarning: Mean of empty slice\'    can appear if there is no data in specific section. \n but that\'s OK'
+    # print 'A warning    \'RuntimeWarning: Mean of empty slice\'    can appear if there is no data in specific section. \n but that\'s OK'
     distri=numpy.zeros((data.shape[1],2*(divide+1))) #컬럼수,쪼갬수(평균,개수 2개씩이라 *2, 총평균/개수 포함이라 +1)
-
     for n_col in range(0,data.shape[1]): #컬럼별.
         #print(data[:,col])
-        
         data_col= numpy.sort(data[:,n_col]) #구간별로 쪼개기위해 커지는 순서로 정렬. ascending order
         indicator = numpy.array([(slit+1)*1./divide-0.5 for slit in range(0,divide)],dtype='float32') #dtype 안맞추면 이상하게 비교함. 
-
         for div_step in range(0,2): #평균을 divide 개로 나누는데 처음 한번은 전체평균과 개수를 넣고 두번째는 구간평균과 개수 넣으려 함. 
             if div_step == 0 : #처음 3개는 전체평균, 전체개수, 조각개수를 구하고
                 distri[n_col,div_step]=numpy.average(data_col) #전체 평균
                 distri[n_col,div_step+1]=data_col.shape[0] #전체 개수
-
             else: #첫번째가 아니면 -0.5~+0.5를 지정개수대로 쪼갠뒤 구간별 평균과 개수를 만든다.
                 index_array=numpy.searchsorted(data_col,indicator,side='right') #sort 된 컬럼에서 indecator 값들이 몇번째에 있는지 배열로 나타냄
-
                 item_prev=0
                 for i, item in enumerate(index_array): #인덱스번호를 index_array 로 한방에 만드는바람에 위치지정이 꼬였음. 
                     #print i,item, div_step
-                    
                     #개수는 0으로 표현되지만 평균은 개수가 0일때 nan 표기됨. 이건 nonetype 이 되어 모든 데이터를 nonetype 만들고, 나중에 pickle 화나 excel 변환시 타입오류 만듬.
                     temp = numpy.average(data_col[item_prev:item])#구간별 평균을 삽입
                     if not (temp==temp) : #nan 은 서로 == 연산해도 false 인걸 이용해서. 
                         distri[n_col,2*(i+1)]= 0.
                     else : 
                         distri[n_col,2*(i+1)]= temp
-
                     distri[n_col,2*(i+1)+1]= item - item_prev #구간별 개수를 삽입
                     item_prev = item #현재값 저장
     #print distri[1] #잘나왔나 한줄 집어서 확인
     return distri
 
-
-try:
-#자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 업그레이드하고 -0.5~+0.5 normalize 까지 한방에! getdata만 바꿔주면됨.
-    get_y=numpy.array(allFloat(getdata(1)),dtype='float32')
-    print'get_y volume : ',get_y.shape
-    get_n=numpy.array(allFloat(getdata(0)),dtype='float32')
-    print'get_n volume : ',get_n.shape
+def labelWithJoin(y,n): #a는 1로, b는 0으로 라벨링한후 합쳐진 라벨을 반환한다.
+    join=numpy.concatenate((numpy.zeros(y.shape[0])+1,numpy.zeros(n.shape[0])),axis=0)
+    return join
 
 
-#dummy화                 
+def normAndDummy(get_y,get_n): 
     get=numpy.concatenate((get_y,get_n),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
     print 'after concatenate :', get.shape
     #아래는 자동으로 카테고리 컬럼이 뭔지 생성. 
@@ -304,26 +311,52 @@ try:
     print 'get shape : ',get.shape
     get_y=get[:get_y.shape[0]]
     get_n=get[get_y.shape[0]:]
-    print '\n','after normalize & dummylize'
-    print'get_y volume : ',get_y.shape
-    print'get_n volume : ',get_n.shape,'\n'
-
     del get #메모리를 위해. 
+    print '\n','after divide & normalize & dummylize'
+    print'get_y shape : ',get_y.shape
+    print'get_n shape : ',get_n.shape,'\n'
+    return get_y, get_n, get_cnames
 
-#라벨링한뒤에 class들 합치기
-    label=numpy.concatenate((numpy.zeros(get_y.shape[0])+1,numpy.zeros(get_n.shape[0])),axis=0)
-    data=numpy.concatenate((get_y,get_n),axis=0)
-    #print' label, data : ',label.shape, data.shape
 
-#위치 섞기
-    label,data=randomize(label,data)
-    #print(label)
+#실제 실행 시작 =================================================
+#==========================================================
 
-#test / train set 분리
-    test_label, test_data, train_label, train_data = dataDivide(label,data)
-    #print'test_label , train_label shape : ',test_label.shape,train_label.shape
+try:
+#자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 변경
+    get_y=numpy.array(allFloat(getdata(1)),dtype='float32')
+    print'original get_y shape : ',get_y.shape
+    print get_y
+    get_n=numpy.array(allFloat(getdata(0)),dtype='float32')
+    print'original get_n shape : ',get_n.shape
+    print get_n
 
-#train set distribution analysis [전체평균,전체개수,구간1평균, 구간1개수, 구간2평균, 구간2개수 ... ]
+#dummy,normalize. SQL에서 클래스별 자료를 따로 받아왔지만 노멀라이즈는 합쳐서 해야하고, 더미도 유니크 항목 기준이기때문에 합쳤다 다시나눔.
+#내부적으로 합쳐서 노멀, 더미 후에 다시 나눠서 반환함. 
+#더미시에 컬럼 늘기때문에 컬럼명도 여기서 추가됨.  
+    get_y,get_n,get_cnames = normAndDummy(get_y,get_n)            
+
+#더미화 끝난 y, n 을 각각 test/train 으로 나눔
+    test_y, train_y = dataDivide(get_y,test_ratio)
+    test_n, train_n = dataDivide(get_n,test_ratio)
+    del get_y, get_n #나누기 전 자료는 필요없음
+
+#라벨링하며 test는 test끼리, train 은 train끼리 합쳐 하나의 큰 배열로 만듬. train시 순서 섞기 위함
+    test_label=labelWithJoin(test_y,test_n)
+    train_label=labelWithJoin(train_y,train_n)
+#데이터도 합쳐줌. 라벨이 y-n 순서였으니 이것도 같은 순서로 합침. 
+    test_data=numpy.concatenate((test_y,test_n),axis=0)
+    train_data=numpy.concatenate((train_y,train_n),axis=0)
+    print' test label, data : ',test_label.shape, test_data.shape
+    print' train label, data : ',train_label.shape, train_data.shape
+    del test_y, test_n, train_y, train_n #사용끝난 변수 삭제
+
+#학습을 위해 랜덤으로 위치 섞기
+    test_label,test_data=randomize( test_label,test_data)
+    train_label,train_data=randomize(train_label,train_data)
+    print 'test_label : ',test_label
+    print 'train_label : ',train_label
+
+#for train set distribution analysis [전체평균,전체개수,구간1평균, 구간1개수, 구간2평균, 구간2개수 ... ]
     train_distri = chkDistri(train_data)
 
 #picklelize
@@ -334,13 +367,12 @@ try:
         'train_label' : train_label,
         'train_data' : train_data,
         'col_names' : get_cnames,
-        'distribution' : train_distri
+        'train_distri' : train_distri
         }
     pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
     f.close()
     print '\npicklize finished.  filename :',pickle_name,' Size : ',os.stat(pickle_name).st_size/1024/1024,'MByte'
     pickletest(pickle_name)
-
 
 finally:
     print("closing")
