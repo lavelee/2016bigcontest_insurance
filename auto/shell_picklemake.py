@@ -19,7 +19,7 @@ sql_folder = 'D:/sql_to_pickle_forshell/db_sql/'               #nullfix DB 를 �
 subpy = 'D:/sql_to_pickle_forshell/insurance_pickle_cufix.py'    #실행할 py 파일. 한글경로 들어가면 안됨
 #변화시킬 변수지정 : 
 outdel=[0,1] #outdel은 0이나 1 적으면 그냥넘어가고 [0,1] 주면 1에서 outdel 쿼리 실행함.
-dummy=[0,100] #원래 함수는 %로도 되어서 0.01 를 받았는데, subpy를 수정해서 int 로 변환하게 해놨으므로 정수만 넣자.  배열가능
+dummy=[0, 100, 300] #원래 함수는 %로도 되어서 0.01 를 받았는데, subpy를 수정해서 int 로 변환하게 해놨으므로 정수만 넣자.  배열가능
 n_pickle=3 #조건당 피클 몇개만듬
 
 
@@ -53,19 +53,37 @@ update  insurance_nullfix.cntt  set MNTH_INCM_AMT = 20000000 where  MNTH_INCM_AM
 
 
 
-mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db='insurance') #존재하는 아무 DB나 연결하면 된다 
+mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db=dbname)
 cur=mydb.cursor()
-mydb.set_character_set('utf8')
-cur.execute('SET NAMES utf8;')
-cur.execute('SET CHARACTER SET utf8;')
-cur.execute('SET character_set_connection=utf8;')
+# mydb.set_character_set('utf8')
+# cur.execute('SET NAMES utf8;')
+# cur.execute('SET CHARACTER SET utf8;')
+# cur.execute('SET character_set_connection=utf8;')
 
-def sql_execute(file_wpath):
+def sqlExecute_bypy(lines): #여러줄로 되었고 빈 주석문이나 빈 엔터줄 없는 sql 을 라인으로 잘라서 실행. 
+    mydb=MySQLdb.connect(host='localhost',user='root', passwd='tjdgus123', db=dbname)
+    cur=mydb.cursor()
+    for line in outdel_sql.splitlines() : #outdel용 update 쿼리의 한줄씩 실행
+        if line.find('*/')-line.find('/*')+2 == len(line) or line=='\n' : #한 줄 전체가 주석인 경우나 엔터만 있는경우 패스
+            #print 'passing line : ',line
+            pass
+        else: #아닐때만 실행한다. 
+            # print 'executing line : ',line
+            cur.execute(line)
+    cur.close()
+    mydb.close()
+    print 'outdel sql executed'
+
+def sqlExecute_byshell(file_wpath):
     command='"C:/Program Files/MariaDB 10.1/bin/mysql.exe" -uroot -ptjdgus123 < "'+file_wpath+'"'
     print 'inserting sql :',command,'\n'
     subprocess.check_output(command,shell=True)
 
-
+def dropDatabase(dbname):
+    print 'trying to drop database :',dbname
+    command='"C:/Program Files/MariaDB 10.1/bin/mysql.exe" -uroot -ptjdgus123 -e "drop database '+dbname+'"'
+    subprocess.check_output(command,shell=True)
+    print 'database dropped :',dbname
 
 def where(i,j,k,l,jmax=len(outdel),kmax=len(dummy),lmax=n_pickle): 
 #현재위치 셈. imax는 필요가 없다
@@ -75,25 +93,20 @@ def where(i,j,k,l,jmax=len(outdel),kmax=len(dummy),lmax=n_pickle):
                 l+1                ) #마지막 digit에는 +1 해줘야함.
     return position
 
+
+total_num = len(files_wpath)*len(outdel)*len(dummy)*n_pickle #총 개수 자동계산
 try: # i:sql파일번호 ,j:outdel 0/1 , k : dummy  l: duplicated pickle no
-    total_num = len(files_wpath)*len(outdel)*len(dummy)*n_pickle #총 개수 자동계산
     for i, file_wpath in enumerate(files_wpath):
-        sql_execute(file_wpath) #파일1개 실행
+        # if i>0:   #drop 안해도 기본적으로 내용물 싹 비우고 다시 넣도록 sql 만들었기 때문에 괜춘. 
+        #     dropDatabase(dbname) #2번째부터 기존 db 삭제. 뭘삭제는 소스파일 위쪽에 dbname 
+        sqlExecute_byshell(file_wpath) #파일1개 실행
         #print 'file# :', i              #현재 몇번째 파일인지 . 0부터 시작함
         #print file_wpath+' executed' # 파일이름 실행되었습니다
-
         #i번째 sql 이 들어간 상태에서 subpy 실행. dummy 없이, 100, 1000, outdel 하고 없이, 100, 1000. 각각 4개씩 총 6*4=24개의 pickle 만듬.
         #filename : rand00 outdel0 dummy000 00.pickle
         for j,j_outdel in enumerate(outdel):
             if j==1: #0, 1로 주었었다면 처음에는 곱게 지나가고 1 일때는 아래 실행하고 진행함. 
-                for line in outdel_sql.splitlines() : #outdel용 update 쿼리의 한줄씩 실행
-                    if line.find('*/')-line.find('/*')+2 == len(line) or line=='\n' : #한 줄 전체가 주석인 경우나 엔터만 있는경우 패스
-                    #print 'passing line : ',line
-                        pass
-                    else: #아닐때만 실행한다. 
-                        # print 'executing line : ',line
-                        print 'executing nullfix sql ...'
-                        cur.execute(line)
+                sqlExecute_bypy(outdel_sql.splitlines())
             for k,k_dummy in enumerate(dummy):
                 for l in range(0,n_pickle):
                     sql_name = files_wpath[i][:files_wpath[i].find('.sql')] #sql 파일말고 딴거 넣지 않도록 조심.
@@ -114,9 +127,6 @@ try: # i:sql파일번호 ,j:outdel 0/1 , k : dummy  l: duplicated pickle no
                     tryno = sys.argv[4] #몇번째 제작중인 picklefile 인지 #0,1,2,3,4...
                     """
 finally:
-    cur.close()
-    mydb.close()
-    print('\nDB closed')
     t2=time.localtime() #끝난 시간
     print 'started at', time.strftime('%y%m%d %Hh%Mm',t1)
     print 'ends at',  time.strftime('%y%m%d %Hh%Mm',t2)
