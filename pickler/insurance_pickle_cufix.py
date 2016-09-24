@@ -23,19 +23,18 @@ afterdummy_variables_limit=0 #고유항목수 N개(N>1) , N의 비율로(0~1값)
 pickle_name='clcntt_randfix01.pickle' #만들어진 피클 이름. picklize 에서 쓴다. 
 test_ratio=0.2 #데이터에서 테스트셋의 비율
 
+
 #혹시 외부변수가 있다면 외부변수 우선 설정. 
 try :
-    pickle_name = sys.argv[1]
+    dbname = sys.argv[1] #sql 파일의 이름. nullfix01.sql 에서 .sql 떼고 nullfix01
+    ifoutdel = int(sys.argv[2]) #0 또는 1
+    afterdummy_variables_limit = int(sys.argv[3]) #0, 100, 1000
+    tryno = int(sys.argv[4]) #몇번째 제작중인 picklefile 인지 #0,1,2,3,4...
+    #filename : (저장경로/)rand00 outdel0 dummy000 00.pickle
+    pickle_name = dbname+' outdel'+str(ifoutdel)+' dummy'+str(afterdummy_variables_limit)+' '+str(tryno)+'.pickle'
 except IndexError :
     pass
-try :
-    ifnormalize = sys.argv[2]
-except IndexError :
-    pass
-try :
-    afterdummy_variables_limit = sys.argv[3]
-except IndexError :
-    pass
+
 
 
 #query . 끝에 Y/N 은 제외했다 나중에 붙임.
