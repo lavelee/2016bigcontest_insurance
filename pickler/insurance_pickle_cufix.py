@@ -37,9 +37,8 @@ except IndexError :
 
 
 
-#query . 끝에 Y/N 은 제외했다 나중에 붙임.
+#query . 끝에 Y/N 은 제외했다 나중에 붙임.    cust_part.cust_id 는 디버그용이라 실제에선 뺌. 
 sql_input=""" Select
-   cust_part.cust_id,
    cust_part.AGE,
    cust_part.SEX,
    cust_part.RESI_COST,
@@ -114,16 +113,30 @@ sql_input=""" Select
    insurance_nullfix.claim.HOSP_SPEC_DVSN,
    insurance_nullfix.claim.ACCI_HOSP_ADDR,
    insurance_nullfix.claim.HOUSE_HOSP_DIST,
-   insurance_nullfix.claim.VLID_HOSP_OTDA
+   insurance_nullfix.claim.VLID_HOSP_OTDA,
+   fpinfo.INCB_DVSN,
+   fpinfo.ETRS_YM,
+   fpinfo.FIRE_YM,
+   fpinfo.CLLT_FP_PRNO,
+   fpinfo.BRCH_CODE,
+   fpinfo.EDGB,
+   fpinfo.BEFO_JOB
   From
     claim inner Join
-          (Select cust.* From cust Where cust.SIU_CUST_YN = %d Order By  rand()) as cust_part
+          (Select cust.* From cust Where cust.SIU_CUST_YN = %s) as cust_part
       On cust_part.CUST_ID = claim.CUST_ID
     Left Join
     insurance_nullfix.cntt
       On insurance_nullfix.claim.POLY_NO = insurance_nullfix.cntt.POLY_NO And
-      insurance_nullfix.cntt.CUST_ID = insurance_nullfix.claim.CUST_ID """
+      insurance_nullfix.cntt.CUST_ID = insurance_nullfix.claim.CUST_ID 
+    Left join 
+    insurance_nullfix.fpinfo
+      On insurance_nullfix.cntt.CLLT_FP_PRNO = fpinfo.CLLT_FP_PRNO """
 
+#제출용 데이터의 cust_id 목록. 
+sql_custid_submit='''Select   cust_part.cust_id  From  claim inner Join
+(Select cust.* From cust Where cust.SIU_CUST_YN = 2 ) as cust_part
+On cust_part.CUST_ID = claim.CUST_ID'''
 
 def columnNames(sql,initial="select",end="from"): #컬럼네임 리스팅 좌우 단어 받아서 컬럼네임 배열로 출력. 
     sql=sql.upper()
@@ -300,8 +313,8 @@ def labelWithJoin(y,n): #a는 1로, b는 0으로 라벨링한후 합쳐진 라�
     return join
 
 
-def normAndDummy(get_y,get_n): 
-    get=numpy.concatenate((get_y,get_n),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
+def normAndDummy(get_y,get_n,get_submit): 
+    get=numpy.concatenate((get_y,get_n,get_submit),0) #왜 나눠서 가져왔냐면, classification index 만들기 위해서임
     print 'after concatenate :', get.shape
     #아래는 자동으로 카테고리 컬럼이 뭔지 생성. 
     get_cat_tf_index=autoCategoricalIndex(get,showCategoricalLimit(get,afterdummy_variables_limit))
@@ -309,12 +322,14 @@ def normAndDummy(get_y,get_n):
     get=normalize(get,ifnormalize)
     print 'get shape : ',get.shape
     get_y=get[:get_y.shape[0]]
-    get_n=get[get_y.shape[0]:]
+    get_n=get[get_y.shape[0]:get_y.shape[0]+get_n.shape[0]]
+    get_submit=get[get_y.shape[0]+get_n.shape[0]:]
     del get #메모리를 위해. 
     print '\n','after divide & normalize & dummylize'
     print'get_y shape : ',get_y.shape
-    print'get_n shape : ',get_n.shape,'\n'
-    return get_y, get_n, get_cnames
+    print'get_n shape : ',get_n.shape,
+    print'get_submit shape : ',get_submit.shape,'\n'
+    return get_y, get_n, get_submit, get_cnames
 
 
 #실제 실행 시작 =================================================
@@ -322,17 +337,27 @@ def normAndDummy(get_y,get_n):
 
 try:
 #자료 가져와서, 변수타입 float로 바꾸고, numpy 배열로 변경
-    get_y=numpy.array(allFloat(getdata(1)),dtype='float32')
+    get_y=numpy.array(allFloat(getdata('1 Order By  rand()')),dtype='float32')
     print'original get_y shape : ',get_y.shape
     # print get_y
-    get_n=numpy.array(allFloat(getdata(0)),dtype='float32')
+    get_n=numpy.array(allFloat(getdata('0 Order By  rand()')),dtype='float32')
     print'original get_n shape : ',get_n.shape
     # print get_n
+    get_s=numpy.array(allFloat(getdata('2')),dtype='float32') #제출데이터. 순서 섞지않고 받아온다. 
+    print'data for submit shape: ',get_s.shape
+    print'submit : ',get_s
+
+#submit 의 경우 cust_id 도 가져와야 한다 
+    cur.execute(sql_custid_submit)
+    get_s_custid = numpy.array([list(a) for a in cur.fetchall()])
+    print 'get_s_custid shape :',get_s_custid.shape
+    print 'get_s_custid :',get_s_custid
 
 #dummy,normalize. SQL에서 클래스별 자료를 따로 받아왔지만 노멀라이즈는 합쳐서 해야하고, 더미도 유니크 항목 기준이기때문에 합쳤다 다시나눔.
 #내부적으로 합쳐서 노멀, 더미 후에 다시 나눠서 반환함. 
 #더미시에 컬럼 늘기때문에 컬럼명도 여기서 추가됨.  
-    get_y,get_n,get_cnames = normAndDummy(get_y,get_n)            
+    get_y,get_n, get_s, get_cnames = normAndDummy(get_y,get_n,get_s) 
+    print 'get_s shape : ',get_s.shape
 
 #더미화 끝난 y, n 을 각각 test/train 으로 나눔
     test_y, train_y = dataDivide(get_y,test_ratio)
@@ -366,7 +391,9 @@ try:
         'train_label' : train_label,
         'train_data' : train_data,
         'col_names' : get_cnames,
-        'train_distri' : train_distri
+        'train_distri' : train_distri,
+        'submit_data' : get_s,
+        'submit_custid' : get_s_custid
         }
     pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
     f.close()

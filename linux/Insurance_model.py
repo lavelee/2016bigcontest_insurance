@@ -38,9 +38,9 @@ with open(pickle_file, 'rb') as f:
   train_dataset = save['train_data']
   column_names = save['col_names']
   train_distri = save['train_distri']
+  submit_dataset = save['submit_data']
+  submit_custid = save['submit_custid']
 del save  #to free up memory
-
-
 
 
 def reformat(labels):
@@ -93,8 +93,8 @@ with graph.as_default():
   optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
     
   train_prediction = tf.nn.softmax(L2_logits)
-  test_prediction =tf.nn.softmax(
-    tf.matmul(tf.nn.relu(tf.matmul(test_dataset, L1_weights) + L1_biases),L2_weights)+L2_biases)
+  test_prediction =tf.nn.softmax(tf.matmul(tf.nn.relu(tf.matmul(test_dataset, L1_weights) + L1_biases),L2_weights)+L2_biases)
+  submit_prediction =tf.nn.softmax(tf.matmul(tf.nn.relu(tf.matmul(submit_dataset, L1_weights) + L1_biases),L2_weights)+L2_biases)
     
   saver = tf.train.Saver({'w1' : L1_weights,
                           'b1' : L1_biases,
@@ -120,6 +120,7 @@ with tf.Session(graph=graph) as session:
   b1 = session.run(L1_biases)
   w2 = session.run(L2_weights)
   b2 = session.run(L2_biases)
+  submit_result = submit_prediction.eval()
 
 
 
@@ -130,6 +131,7 @@ save ={'w1' : w1,
        'b2' : b2,
        'col_names' : np.array(column_names),#numpy.array 안붙이면 shape 못쓰기도 하고 다음에 꺼내쓸때 오류날수있음
        'tr_dist' : np.array(train_distri),
+       'submit' : np.array(submit_result)
       }
 pickle.dump(save,f,pickle.HIGHEST_PROTOCOL)
 f.close()
