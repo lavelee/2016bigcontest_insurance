@@ -120,8 +120,9 @@ with tf.Session(graph=graph) as session:
   b1 = session.run(L1_biases)
   w2 = session.run(L2_weights)
   b2 = session.run(L2_biases)
-  submit_result = submit_prediction.eval()
-
+  submit_result = np.concatenate((submit_custid,submit_prediction.eval()),1)
+  print(submit_result.shape)
+  print(submit_result)
 
 
 f=open(pickle_name,'w')
