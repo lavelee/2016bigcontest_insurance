@@ -12,14 +12,26 @@ t1=time.localtime() #시작시간
 print 'started at', time.strftime('%y%m%d %Hh%Mm',t1)
 
 #pickle file location 
-pickle_folder = 'D:/sql_to_pickle_forshell/pickles/cuclcntt/'  #나중에 파일명 추가하기 용이하게 마지막에 / 를 추가해줘야한다. 
+pickle_folder = 'D:/PROJECT/insurance2016/pickle/test/'  #나중에 파일명 추가하기 용이하게 마지막에 / 를 추가해줘야한다. 
 subpy = 'D:/sql_to_pickle_forshell/tree_trainers_forshell.py'    #실행할 py 파일. 한글경로 들어가면 안됨
 
 #변화시킬 변수지정 : 
-trainer_select=['tree','randomforest','adaboost']
-n_estimators=[10,100,500]
-learning_rate=[0.2, 0.5, 0.9]
-test_repeat = 4
+trainer_select=['adaboost']
+n_estimators=[100]
+learning_rate=[0.5, 0.9]
+test_repeat = 2
+
+#tree, random forest, adaboost 중 리스트에 있는거에 대해서만 total 에 추가하게 변경해야함. 현재는 수동
+tree_total_test= len(files_name)*test_repeat
+# print(tree_total_test)
+rand_total_test= len(files_name)* len(n_estimators)*test_repeat
+# print(rand_total_test)
+ada_total_test = len(files_name)*len(n_estimators)*len(learning_rate)*test_repeat
+# print(ada_total_test)
+# total=tree_total_test+rand_total_test+ada_total_test
+total = ada_total_test
+# print(total)
+where=0
 
 #폴더내 pickle 파일들 리스트 얻기
 files_name = os.listdir(pickle_folder)
@@ -29,7 +41,7 @@ files_wpath = [pickle_folder+item for item in files_name]  #os.path.join 쓰면 
 
 def pcrfCollector(book):
 #sin predict, sin correct predict, sin real, sin f1 score 부분을 텍스트에서 찾고 오른쪽의 값을 리턴한다
-    targets =['\nsin predict : ','\nsin correct predict : ','\nsin real : ','\nsin F1 score : ','\nfinished']
+    targets =['\nsin predict : ','\nsin correct predict : ','\nsin real : ','\nsin F1 score : ','\nresult printing finished']
     result =[] #위 targets 배열의 마지막은 stopper 로 실제 탐색에 사용되진 않지만 멈추는 위치 지정이다. 
     for i in range(0,len(targets)-1) : #마지막 배열은 ending point 라서 제거 
         start = book.find(targets[i])+len(targets[i])
@@ -69,11 +81,7 @@ def sheetmake(data,excel_name):
     book.save(excel_name)
     print 'finished, file saved : ',excel_name
 
-tree_total_test= len(files_name)*test_repeat
-rand_total_test= len(files_name)* len(n_estimators)*test_repeat
-ada_total_test = len(files_name)*len(n_estimators)*len(learning_rate)*test_repeat
-total=tree_total_test+rand_total_test+ada_total_test
-where=0
+
 
 test_result = [['picklename','trainer','estimators','L rate','test repeat','predict','correct predict','real','F1 score']] #자료 넣을 컬럼, 9컬럼.
 
@@ -93,9 +101,10 @@ try:
     for i,ii in enumerate(files_name):
         data=pickleread(pickle_folder+ii)
         for j ,jj in enumerate(trainer_select): #트레이너 선택
-            for m in range(0,test_repeat): #반복횟수
+            for m in range(1,test_repeat+1): #반복횟수. 1부터
                 if jj=='tree':
                     syscommand = 'python '+subpy+' "'+pickle_folder+ii+'" '+jj+' '+pickle_folder+ii[:ii.find('.pickle')]+' '+str(m)+'.pdf'
+                    # print syscommand
                     get=subprocess.check_output(syscommand, shell=True)
                     output = pcrfCollector(get)
                     output.insert(0,m)#한 조건의 몇번째 try 인지
@@ -110,6 +119,7 @@ try:
                 elif jj=='randomforest':
                     for k, kk in enumerate(n_estimators): 
                         syscommand = 'python '+subpy+' "'+pickle_folder+ii+'" '+jj+' '+str(kk)
+                        # print syscommand
                         get=subprocess.check_output(syscommand, shell=True)
                         output = pcrfCollector(get)
                         output.insert(0,m)#한 조건의 몇번째 try 인지
@@ -124,7 +134,8 @@ try:
                 elif jj=='adaboost':
                     for k, kk in enumerate(n_estimators):
                         for l, ll in enumerate(learning_rate):
-                            syscommand = 'python '+subpy+' "'+pickle_folder+ii+'" '+jj+' '+str(kk)+' '+str(ll)
+                            syscommand = 'python '+subpy+' "'+pickle_folder+ii+'" '+jj+' '+str(kk)+' '+str(ll)+' '+str(m)
+                            # print syscommand
                             get=subprocess.check_output(syscommand, shell=True)
                             output = pcrfCollector(get)
                             output.insert(0,m)#한 조건의 몇번째 try 인지

@@ -12,12 +12,13 @@ import pydotplus
 import pickle
 import numpy as np
 import sys
+import openpyxl
 
-picklename='nullfix01 outdel0 dummy0 0.pickle'
+picklename='clcntt_randfix01.pickle'
 trainer_select = 'adaboost'
 # trainer_select = 'tree'
 # trainer_select = 'randomforest'
-n_estimators=1000
+n_estimators=10
 learning_rate=0.8
 pdfname='test.pdf'
 ifpdf=0
@@ -28,6 +29,10 @@ try : #변수를 외부에서 받아오는거 설정하고 없으면 pass
     if trainer_select =='adaboost':
         n_estimators=int(sys.argv[3])
         learning_rate=float(sys.argv[4])
+        test_repeat=int(sys.argv[5])
+        #현재 submit 본의 결과테스트는 adaboost 만 결과출력하도록.
+        excel_name = picklename+' '+trainer_select+' est'+str(n_estimators)+' LR'+str(learning_rate)+' TR'+str(test_repeat)+' submit.xlsx'
+        # print excel_name
     elif trainer_select =='randomforest':
         n_estimators=int(sys.argv[3])
     elif trainer_select =='tree':
@@ -55,24 +60,45 @@ def f1Score(predictions, labels):
     print'sin correct predict :',correct_predict[1]
     print'sin real :',real[1]
     print'sin F1 score :',f1_score
+    print 'result printing finished'
     return f1_score
+
+def sheetmake(data,excel_name):
+    book = openpyxl.Workbook()
+    for dictitle , dictdata in data.items():
+        dictdata=np.matrix(dictdata) #1차원 배열 있으면 shape 차원 하나라 오류나서.
+        sheet=book.create_sheet(title=dictitle)
+        for n_col in range(0,dictdata.shape[1]):
+            for n_row in range(0,dictdata.shape[0]):
+                input_value=np.asscalar(dictdata[n_row,n_col])          #python native 로 바꿔주는 코드. 이것과 아래줄 둘중하나 필수. 
+                #input_value=dictdata[n_row,n_col]                           #str 오류날때 asscalar 빼면 될때있음
+                sheet.cell(row=n_row+1,column=n_col+1).value=input_value    #엑셀에선 행,열 첫번호가 1 
+            # sheet.column_dimensions[openpyxl.cell.get_column_letter(n_col+1)].width = 2.76 #컬럼 넓이 조절. 필요 없으면 빼기
+        print('making sheet : ',dictitle)
+    sheet = book.get_sheet_by_name('Sheet') #select sheet named Sheet
+    book.remove_sheet(sheet) #delete that sheet
+    print('saving data to excel...')
+    book.save(excel_name)
+    print 'finished, file saved : ',excel_name
 
 with open(picklename,'rb') as f:
     data=pickle.load(f)
-train_label=data['train_label']
-train_data =data['train_data']
-test_label =data['test_label']
-test_data  =data['test_data']
-column_names=data['col_names']
+test_labels =data['test_label']
+test_dataset =data['test_data']
+train_labels =data['train_label']
+train_dataset =data['train_data']
+column_names =data['col_names']
+submit_dataset =data['submit_data']
+submit_custid =data['submit_custid']
 del data
 
 #조건별로 트레이너와 변수 세팅
 if trainer_select =='adaboost':
-    trainer = abc(n_estimators=n_estimators,learning_rate=learning_rate).fit(train_data,train_label)
+    trainer = abc(n_estimators=n_estimators,learning_rate=learning_rate).fit(train_dataset,train_labels)
 elif trainer_select =='randomforest':
-    trainer = rf(n_estimators=n_estimators).fit(train_data,train_label)
+    trainer = rf(n_estimators=n_estimators).fit(train_dataset,train_labels)
 elif trainer_select =='tree': #tree 는 pdf 파일도 작성
-    trainer = tree.DecisionTreeClassifier().fit(train_data,train_label)
+    trainer = tree.DecisionTreeClassifier().fit(train_dataset,train_labels)
     if ifpdf==1: #필요하다면 pdf로 출력
         dot_data=StringIO()
         tree.export_graphviz(trainer,
@@ -90,6 +116,20 @@ else:
     raise NameError('Wrong trainer select : only adaboost/tree/randomforest available')
 
 #prediction 수행후 f1 출력
-tr_prediction = trainer.predict(test_data)
-f1Score(tr_prediction,test_label)
+tr_prediction = trainer.predict(test_dataset)
+f1Score(tr_prediction,test_labels)
+
+#매 submit 결과 예측
+submit_estimate = trainer.predict(submit_dataset)[:,None]
+print(submit_custid.shape)
+print(submit_estimate.shape)
+submit_result = np.concatenate((submit_custid,submit_estimate),1)
+# print submit_result
+print 'submit set sin total : ',np.sum(submit_result,0)[1]
+
+# 예측값을 엑셀로 저장
+submit_result={'submit':submit_result} #엑셀은 dict 의 id 로 탭만드는등 동작하니 바꿔줌.
+sheetmake(submit_result, excel_name) 
+#todo   
+
 print 'finished'
